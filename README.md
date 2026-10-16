@@ -2,6 +2,7 @@ npm init -y
 npm install express ejs express-ejs-layouts dotenv cors mongoose axios @google/generative-ai
 npm install -D nodemon
 
+
 cineverse/
 ├── config/
 │   └── db.js                       # Kết nối MongoDB (Mongoose)

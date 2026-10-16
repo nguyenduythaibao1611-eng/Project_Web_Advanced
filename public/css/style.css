@@ -1,0 +1,53 @@
+body {
+    background-color: #121212;
+    color: white;
+    font-family: sans-serif;
+    margin: 0;
+}
+
+header,
+footer {
+    background-color: #1f1f1f;
+    padding: 20px;
+    text-align: center;
+}
+
+header a {
+    color: #f5c518;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.movie-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.movie-card {
+    width: 200px;
+    background-color: #222;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.movie-card img {
+    width: 100%;
+    transition: transform 0.3s;
+}
+
+.movie-card:hover img {
+    transform: scale(1.05);
+}
+
+.movie-info {
+    padding: 10px;
+    text-align: center;
+}
+
+.rating {
+    color: #f5c518;
+    font-weight: bold;
+}
