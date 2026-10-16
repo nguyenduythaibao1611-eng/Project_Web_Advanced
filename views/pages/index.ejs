@@ -1,0 +1,8 @@
+<section class="popular-movies">
+    <h1 style="text-align: center;">🔥 Phim Phổ Biến Đang Hot</h1>
+    <div class="movie-grid">
+        <% movies.forEach(function(movie) { %>
+            <%- include('../partials/movieCard', { movie: movie }) %>
+                <% }); %>
+    </div>
+</section>
