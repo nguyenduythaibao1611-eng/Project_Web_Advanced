@@ -8,7 +8,7 @@ cineverse/
 │   └── db.js                       # Kết nối MongoDB (Mongoose)
 │
 ├── controllers/
-│   ├── movieController.js          # Xử lý render trang chủ, chi tiết phim, tìm kiếm, trailer
+│   ├── movieController.js          # Xử lý render trang chủ, chi tiết phim (đa server TMDB/OPhim/VidSrc), tìm kiếm, trailer
 │   ├── assistantController.js      # Xử lý yêu cầu gợi ý phim từ AI (trả JSON)
 │   └── favoriteController.js       # Xử lý thêm/xóa/lấy danh sách phim yêu thích
 │
@@ -18,12 +18,13 @@ cineverse/
 │
 ├── routes/
 │   ├── index.js                    # Gom toàn bộ route lại một nơi
-│   ├── movieRoutes.js              # Định nghĩa các URL: /, /movies/:id, /search
+│   ├── movieRoutes.js              # Định nghĩa các URL: /, /movies/:id, /movie/:id, /search
 │   ├── assistantRoutes.js          # Định nghĩa URL: POST /api/assistant/recommend
 │   └── favoriteRoutes.js           # Định nghĩa URL: /api/favorites
 │
 ├── services/
 │   ├── tmdbService.js              # Gọi TMDB API (trending, popular, search, detail, videos)
+│   ├── ophimService.js             # Gọi OPhim / PhimAPI (tìm kiếm nguồn phim, lấy link embed & streaming Vietsub)
 │   └── geminiService.js            # Gọi Google Gemini API để phân tích yêu cầu & gợi ý
 │
 ├── middlewares/
@@ -52,7 +53,7 @@ cineverse/
 │       ├── favorites.ejs           # Trang hiển thị danh sách phim đã lưu
 │       └── error.ejs               # Trang hiển thị khi gặp lỗi 404 hoặc 500
 │
-├── public/                         # FILE JAVASCRIPT PHÍA CLIENT (.js)
+├── public/                         # FILE TĨNH & JAVASCRIPT PHÍA CLIENT (.js, .css)
 │   ├── css/
 │   │   └── style.css               # Tùy chỉnh CSS thêm
 │   └── js/
@@ -61,10 +62,14 @@ cineverse/
 │       ├── trailer.js              # Xử lý mở modal trailer và nhúng video YouTube
 │       └── favorite.js             # Xử lý click nút thả tim/lưu phim vào danh sách yêu thích
 │
+├── local-docs/                     # Thư mục tài liệu nội bộ (đã cấu hình .gitignore)
+│   └── Luồng-API.md                # Tài liệu giải thích kiến trúc MVC và luồng gọi API
+│
 ├── app.js                          # Cấu hình Express, View engine EJS, Static public
 ├── server.js                       # Điểm chạy máy chủ, kết nối DB, lắng nghe PORT
-├── .env
-├── .env.example
-├── .gitignore
-├── package.json
-└── README.md
+├── .env                            # Biến môi trường (PORT, TMDB_TOKEN, OPHIM_BASE_URL,...)
+├── .env.example                    # Mẫu cấu hình biến môi trường
+├── .gitignore                      # Danh sách file/thư mục bỏ qua khi commit Git
+├── package.json                    # Cấu hình dự án và danh sách dependencies
+├── package-lock.json               # Khóa phiên bản chi tiết của các dependencies
+└── README.md                       # Tài liệu hướng dẫn dự án

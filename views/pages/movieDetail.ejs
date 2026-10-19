@@ -1,0 +1,121 @@
+<div class="movie-detail-container">
+    <!-- Nút quay lại trang chủ -->
+    <div class="back-nav">
+        <a href="/" class="back-btn">⬅ Quay lại danh sách phim</a>
+    </div>
+
+    <!-- Khung phát Video chính -->
+    <section class="player-section">
+        <div class="player-wrapper">
+            <iframe 
+                id="mainPlayer" 
+                src="<%= ophimLink ? ophimLink : vidsrcLink %>" 
+                width="100%" 
+                height="100%" 
+                frameborder="0" 
+                allowfullscreen="true"
+                webkitallowfullscreen="true"
+                mozallowfullscreen="true"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+            </iframe>
+        </div>
+
+        <!-- Thanh điều khiển chuyển đổi Server -->
+        <div class="server-control-panel">
+            <div class="server-header">
+                <span class="server-title">⚡ Chọn máy chủ phát:</span>
+                <span class="server-hint">(Nếu một server bị chậm hoặc lỗi, vui lòng đổi sang server còn lại)</span>
+            </div>
+            
+            <div class="server-buttons">
+                <% if (ophimLink) { %>
+                    <button 
+                        type="button" 
+                        class="server-btn <%= ophimLink ? 'active' : '' %>" 
+                        id="btnServerOphim" 
+                        onclick="switchServer('<%= ophimLink %>', this)">
+                        🇻🇳 Server 1: Vietsub (OPhim)
+                    </button>
+                <% } %>
+
+                <button 
+                    type="button" 
+                    class="server-btn <%= !ophimLink ? 'active' : '' %>" 
+                    id="btnServerVidsrc" 
+                    onclick="switchServer('<%= vidsrcLink %>', this)">
+                    🌐 Server 2: Bản Gốc (VidSrc)
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Thông tin chi tiết của bộ phim -->
+    <section class="movie-info-section">
+        <div class="poster-container">
+            <% if (movie.poster_path) { %>
+                <img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>" alt="<%= movie.title || movie.name %>" class="detail-poster">
+            <% } else { %>
+                <div class="no-poster">Không có poster</div>
+            <% } %>
+        </div>
+
+        <div class="info-details">
+            <h1 class="movie-title">
+                <%= movie.title || movie.name %>
+            </h1>
+
+            <% if (movie.original_title && movie.original_title !== movie.title) { %>
+                <h2 class="original-title"><%= movie.original_title %></h2>
+            <% } %>
+
+            <div class="meta-row">
+                <% if (movie.release_date) { %>
+                    <span class="meta-item">📅 <%= movie.release_date.split('-')[0] %></span>
+                <% } %>
+
+                <% if (movie.runtime) { %>
+                    <span class="meta-item">⏱ <%= movie.runtime %> phút</span>
+                <% } %>
+
+                <% if (movie.vote_average) { %>
+                    <span class="meta-item rating-badge">⭐ <%= movie.vote_average.toFixed(1) %> / 10</span>
+                <% } %>
+            </div>
+
+            <% if (movie.genres && movie.genres.length > 0) { %>
+                <div class="genre-tags">
+                    <% movie.genres.forEach(function(g) { %>
+                        <span class="genre-pill"><%= g.name %></span>
+                    <% }); %>
+                </div>
+            <% } %>
+
+            <% if (movie.overview) { %>
+                <div class="overview-box">
+                    <h3>Nội dung tóm tắt</h3>
+                    <p><%= movie.overview %></p>
+                </div>
+            <% } %>
+        </div>
+    </section>
+</div>
+
+<!-- Script xử lý chuyển Server tức thì phía Client -->
+<script>
+    function switchServer(serverUrl, buttonElement) {
+        var player = document.getElementById('mainPlayer');
+        if (player && serverUrl) {
+            player.src = serverUrl;
+        }
+
+        // Cập nhật trạng thái nút bấm
+        var buttons = document.querySelectorAll('.server-btn');
+        buttons.forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+
+        if (buttonElement) {
+            buttonElement.classList.add('active');
+        }
+    }
+</script>
