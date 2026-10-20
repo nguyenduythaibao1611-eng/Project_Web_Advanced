@@ -1,11 +1,28 @@
-<a href="/movies/<%= movie.id %>" class="movie-card-link">
+<% const currentId = movie.movieId || movie.id; %>
+<a href="/movies/<%= currentId %>" class="movie-card-link" data-movie-id="<%= currentId %>">
     <div class="movie-card">
-        <img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>" alt="<%= movie.title %>">
+        <div class="movie-poster-box">
+            <img src="<%= movie.poster_path ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path : 'https://placehold.co/500x750/1e1e1e/f5c518?text=No+Poster' %>" alt="<%= movie.title %>" loading="lazy">
+        </div>
         <div class="movie-info">
-            <h3>
-                <%= movie.title %>
-            </h3>
-            <p class="rating">⭐ <%= movie.vote_average %>/10</p>
+            <div class="movie-title-row">
+                <h3 class="movie-card-title" title="<%= movie.title %>">
+                    <%= movie.title %>
+                </h3>
+                <button type="button" 
+                        class="favorite-btn" 
+                        data-movie-id="<%= currentId %>"
+                        data-title="<%= movie.title %>"
+                        data-poster="<%= movie.poster_path || '' %>"
+                        data-vote="<%= movie.vote_average || 0 %>"
+                        data-release="<%= movie.release_date || '' %>"
+                        data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
+                        title="Thêm vào danh sách yêu thích"
+                        aria-label="Yêu thích">
+                    <span class="star-icon">★</span>
+                </button>
+            </div>
+            <p class="rating">⭐ <%= movie.vote_average ? Number(movie.vote_average).toFixed(1) : '0.0' %>/10</p>
         </div>
     </div>
 </a>
