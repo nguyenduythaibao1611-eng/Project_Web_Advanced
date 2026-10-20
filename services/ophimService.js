@@ -30,7 +30,7 @@ const requestWithFallback = async (path, params = {}) => {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 }
             });
-        } catch (backupError) {
+        } catch {
             throw primaryError; // Ném lỗi ban đầu để catch bên ngoài ghi log
         }
     }
