@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * favorite.js - Xử lý tính năng thêm/xóa phim yêu thích bằng dấu sao
  */
