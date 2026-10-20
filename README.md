@@ -18,7 +18,7 @@ cineverse/
 │
 ├── routes/
 │   ├── index.js                    # Gom toàn bộ route lại một nơi
-│   ├── movieRoutes.js              # Định nghĩa các URL: /, /movies/:id, /movie/:id, /search
+│   ├── movieRoutes.js              # Định nghĩa các URL: /, /movies/:id, /search
 │   ├── assistantRoutes.js          # Định nghĩa URL: POST /api/assistant/recommend
 │   └── favoriteRoutes.js           # Định nghĩa URL: /api/favorites
 │
