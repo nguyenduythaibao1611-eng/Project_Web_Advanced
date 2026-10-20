@@ -1,30 +1,106 @@
-<!-- header.ejs -->
+<!-- header.ejs - Modern Streaming Navbar -->
 <header class="site-header">
-    <div class="header-container">
-        <a href="/" class="site-logo">
-            <h2>🎬 CineVerse</h2>
-        </a>
-        <nav class="nav-links">
-            <a href="/" class="nav-link">Trang chủ</a>
-            <a href="/favorites" class="nav-link fav-nav-link">
-                <span class="nav-star">★</span> Phim Yêu Thích
-                <span class="fav-count-badge" id="favCountBadge" style="display: none;">0</span>
-            </a>
-            <a href="/search" class="nav-link">Tìm kiếm</a>
+    <div class="header-inner">
+        <!-- Nhóm bên trái: Hamburger Menu + Điều hướng chính -->
+        <div class="header-left">
+            <button type="button" class="icon-btn menu-toggle-btn" id="menuToggleBtn" aria-label="Menu" title="Menu danh mục">
+                <i class="fa-solid fa-bars"></i>
+            </button>
 
+            <a href="/" class="brand-logo" title="CineVerse Home">
+                <span class="logo-text">CINEVERSE</span>
+            </a>
+
+            <nav class="nav-menu" id="navMenu">
+                <!-- 1. HOME - Đã có tính năng, ấn vào chuyển về trang chủ -->
+                <a href="/" class="nav-item <%= (typeof title !== 'undefined' && title.includes('Trang chủ')) ? 'active' : '' %>">
+                    <span>HOME</span>
+                </a>
+
+                <!-- 2. TV - Chưa có backend, gắn trạng thái Disabled & Tooltip -->
+                <a href="javascript:void(0)" class="nav-item nav-disabled" data-feature="TV Series" title="Tính năng TV Series đang phát triển">
+                    <span>TV</span>
+                    <span class="badge-soon">SOON</span>
+                </a>
+
+                <!-- 3. MOVIES - Đã có tính năng (phim lẻ) -->
+                <a href="/" class="nav-item">
+                    <span>MOVIES</span>
+                </a>
+
+                <!-- 4. LIST (My List) - Đã có tính năng, chuyển đến trang Favorites -->
+                <a href="/favorites" class="nav-item fav-nav-item <%= (typeof title !== 'undefined' && title.includes('Yêu Thích')) ? 'active' : '' %>">
+                    <span>MY LIST</span>
+                    <span class="fav-count-pill" id="favCountBadge" style="display: none;">0</span>
+                </a>
+
+                <!-- 5. KIDS - Chưa có backend, gắn trạng thái Disabled & Tooltip -->
+                <a href="javascript:void(0)" class="nav-item nav-disabled" data-feature="Kids" title="Tính năng Kids đang phát triển">
+                    <span>KIDS</span>
+                    <span class="badge-soon">SOON</span>
+                </a>
+
+                <!-- 6. Nút Tìm kiếm Search -->
+                <div class="search-trigger-box">
+                    <button type="button" class="icon-btn search-toggle-btn" id="searchToggleBtn" aria-label="Tìm kiếm" title="Tìm kiếm phim">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                    <!-- Input tìm kiếm mở rộng -->
+                    <div class="search-expand-bar" id="searchExpandBar">
+                        <input type="text" id="quickSearchInput" placeholder="Tìm tên phim..." autocomplete="off">
+                        <button type="button" id="quickSearchClose" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Nhóm bên phải: Thông báo + Avatar Profile / Auth -->
+        <div class="header-right">
+            <!-- Icon Chuông thông báo (Bấm vào hiện dropdown thông báo) -->
+            <div class="notification-wrapper">
+                <button type="button" class="icon-btn notif-btn" id="notifBtn" aria-label="Thông báo" title="Thông báo mới">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="notif-dot"></span>
+                </button>
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header">
+                        <h4>Thông Báo</h4>
+                        <span class="notif-mark-read">Đã đọc</span>
+                    </div>
+                    <div class="notif-body">
+                        <div class="notif-item">
+                            <span class="notif-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                            <div class="notif-info">
+                                <p class="notif-text">Chào mừng bạn đến với giao diện mới của <strong>CineVerse</strong>!</p>
+                                <span class="notif-time">Vừa xong</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avatar người dùng hoặc Đăng nhập / Đăng ký -->
             <% if (typeof user !== 'undefined' && user) { %>
-                <div class="user-nav-group">
-                    <span class="user-greeting" title="<%= user.email %>">
-                        <span class="user-icon">👤</span> <%= user.username %>
-                    </span>
-                    <a href="/logout" class="nav-link nav-btn-logout">Đăng xuất</a>
+                <div class="user-profile-wrapper">
+                    <div class="avatar-ring" id="userAvatarBtn" title="<%= user.username %> (<%= user.email %>)">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="<%= user.username %>" class="avatar-img">
+                    </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-dropdown-header">
+                            <span class="user-name"><%= user.username %></span>
+                            <span class="user-role"><%= user.email %></span>
+                        </div>
+                        <hr class="user-dropdown-divider">
+                        <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
+                        <a href="/logout" class="user-dropdown-link" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+                    </div>
                 </div>
             <% } else { %>
                 <div class="auth-nav-group">
-                    <a href="/login" class="nav-link nav-btn-login">Đăng nhập</a>
-                    <a href="/register" class="nav-link nav-btn-register">Đăng ký</a>
+                    <a href="/login" class="nav-btn-login">Đăng nhập</a>
+                    <a href="/register" class="nav-btn-register">Đăng ký</a>
                 </div>
             <% } %>
-        </nav>
+        </div>
     </div>
 </header>

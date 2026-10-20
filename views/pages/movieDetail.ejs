@@ -1,117 +1,109 @@
-<div class="movie-detail-container">
-    <!-- Nút quay lại trang chủ -->
-    <div class="back-nav">
-        <a href="/" class="back-btn">⬅ Quay lại danh sách phim</a>
-    </div>
+<%
+    const dTitle = movie.title || movie.name;
+    const backdrop = movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : '';
+    const dYear = movie.release_date ? movie.release_date.split('-')[0] : '';
+    const hours = movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${String(movie.runtime % 60).padStart(2, '0')}m` : '';
+%>
+<div class="detail">
+    <!-- ============ HERO CHI TIẾT ============ -->
+    <section class="detail-hero">
+        <% if (backdrop) { %><img class="detail-bg" src="<%= backdrop %>" alt=""><% } %>
+        <div class="detail-shade"></div>
 
-    <!-- Khung phát Video chính -->
-    <section class="player-section">
-        <div class="player-wrapper">
-            <iframe 
-                id="mainPlayer" 
-                src="<%= ophimLink ? ophimLink : vidsrcLink %>" 
-                width="100%" 
-                height="100%" 
-                frameborder="0" 
-                allowfullscreen="true"
-                webkitallowfullscreen="true"
-                mozallowfullscreen="true"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-            </iframe>
-        </div>
+        <div class="detail-inner">
+            <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
 
-        <!-- Thanh điều khiển chuyển đổi Server -->
-        <div class="server-control-panel">
-            <div class="server-header">
-                <span class="server-title">⚡ Chọn máy chủ phát:</span>
-                <span class="server-hint">(Nếu một server bị chậm hoặc lỗi, vui lòng đổi sang server còn lại)</span>
-            </div>
-            
-            <div class="server-buttons">
-                <% if (ophimLink) { %>
-                    <button 
-                        type="button" 
-                        class="server-btn <%= ophimLink ? 'active' : '' %>" 
-                        id="btnServerOphim" 
-                        onclick="switchServer('<%= ophimLink %>', this)">
-                        🇻🇳 Server 1: Vietsub (OPhim)
-                    </button>
-                <% } %>
+            <div class="detail-main">
+                <div class="detail-poster">
+                    <% if (movie.poster_path) { %>
+                        <img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>" alt="<%= dTitle %>">
+                    <% } else { %>
+                        <div class="no-poster"><i class="fa-solid fa-film"></i></div>
+                    <% } %>
+                </div>
 
-                <button 
-                    type="button" 
-                    class="server-btn <%= !ophimLink ? 'active' : '' %>" 
-                    id="btnServerVidsrc" 
-                    onclick="switchServer('<%= vidsrcLink %>', this)">
-                    🌐 Server 2: Bản Gốc (VidSrc)
-                </button>
+                <div class="detail-info">
+                    <% if (movie.original_title && movie.original_title !== movie.title) { %>
+                        <span class="detail-original"><%= movie.original_title %></span>
+                    <% } %>
+                    <h1 class="detail-title"><%= dTitle %></h1>
+
+                    <div class="hero-meta">
+                        <span class="meta-age">13+</span>
+                        <% if (dYear) { %><span><%= dYear %></span><% } %>
+                        <% if (hours) { %><span class="meta-sep"></span><span><%= hours %></span><% } %>
+                        <% if (movie.vote_average) { %>
+                            <span class="meta-sep"></span>
+                            <span class="meta-score"><i class="fa-solid fa-star"></i> <%= movie.vote_average.toFixed(1) %></span>
+                        <% } %>
+                    </div>
+
+                    <% if (movie.genres && movie.genres.length > 0) { %>
+                        <div class="genre-tags">
+                            <% movie.genres.forEach(function(g) { %>
+                                <span class="genre-pill"><%= g.name %></span>
+                            <% }); %>
+                        </div>
+                    <% } %>
+
+                    <div class="hero-actions">
+                        <a href="#player" class="btn btn-primary"><i class="fa-solid fa-play"></i> XEM NGAY</a>
+                        <button type="button"
+                                class="btn btn-glass favorite-btn detail-fav-btn"
+                                data-movie-id="<%= movie.id %>"
+                                data-title="<%= dTitle %>"
+                                data-poster="<%= movie.poster_path || '' %>"
+                                data-vote="<%= movie.vote_average || 0 %>"
+                                data-release="<%= movie.release_date || '' %>"
+                                data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
+                                title="Thêm vào danh sách yêu thích"
+                                aria-label="Yêu thích">
+                            <span class="when-off"><i class="fa-solid fa-plus"></i> MY LIST</span>
+                            <span class="when-on"><i class="fa-solid fa-check"></i> ĐÃ LƯU</span>
+                        </button>
+                        <button type="button" class="btn btn-icon" data-feature="Trailer" title="Trailer (sắp ra mắt)">
+                            <i class="fa-solid fa-clapperboard"></i>
+                        </button>
+                    </div>
+
+                    <% if (movie.overview) { %>
+                        <p class="detail-overview"><%= movie.overview %></p>
+                    <% } %>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Thông tin chi tiết của bộ phim -->
-    <section class="movie-info-section">
-        <div class="poster-container">
-            <% if (movie.poster_path) { %>
-                <img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>" alt="<%= movie.title || movie.name %>" class="detail-poster">
-            <% } else { %>
-                <div class="no-poster">Không có poster</div>
-            <% } %>
-        </div>
-
-        <div class="info-details">
-            <div class="title-with-fav">
-                <h1 class="movie-title">
-                    <%= movie.title || movie.name %>
-                </h1>
-                <button type="button" 
-                        class="favorite-btn detail-fav-btn" 
-                        data-movie-id="<%= movie.id %>"
-                        data-title="<%= movie.title || movie.name %>"
-                        data-poster="<%= movie.poster_path || '' %>"
-                        data-vote="<%= movie.vote_average || 0 %>"
-                        data-release="<%= movie.release_date || '' %>"
-                        data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
-                        title="Thêm vào danh sách yêu thích"
-                        aria-label="Yêu thích">
-                    <span class="star-icon">★</span>
-                    <span class="fav-label">Yêu thích</span>
+    <!-- ============ TRÌNH PHÁT ============ -->
+    <section class="player-section" id="player">
+        <div class="player-head">
+            <h2 class="row-title">Trình phát</h2>
+            <div class="server-buttons">
+                <% if (ophimLink) { %>
+                    <button type="button" class="server-btn active" onclick="switchServer('<%= ophimLink %>', this)">
+                        <i class="fa-solid fa-closed-captioning"></i> Server 1 · Vietsub
+                    </button>
+                <% } %>
+                <button type="button" class="server-btn <%= !ophimLink ? 'active' : '' %>" onclick="switchServer('<%= vidsrcLink %>', this)">
+                    <i class="fa-solid fa-globe"></i> Server 2 · Bản gốc
                 </button>
             </div>
-
-            <% if (movie.original_title && movie.original_title !== movie.title) { %>
-                <h2 class="original-title"><%= movie.original_title %></h2>
-            <% } %>
-
-            <div class="meta-row">
-                <% if (movie.release_date) { %>
-                    <span class="meta-item">📅 <%= movie.release_date.split('-')[0] %></span>
-                <% } %>
-
-                <% if (movie.runtime) { %>
-                    <span class="meta-item">⏱ <%= movie.runtime %> phút</span>
-                <% } %>
-
-                <% if (movie.vote_average) { %>
-                    <span class="meta-item rating-badge">⭐ <%= movie.vote_average.toFixed(1) %> / 10</span>
-                <% } %>
-            </div>
-
-            <% if (movie.genres && movie.genres.length > 0) { %>
-                <div class="genre-tags">
-                    <% movie.genres.forEach(function(g) { %>
-                        <span class="genre-pill"><%= g.name %></span>
-                    <% }); %>
-                </div>
-            <% } %>
-
-            <% if (movie.overview) { %>
-                <div class="overview-box">
-                    <h3>Nội dung tóm tắt</h3>
-                    <p><%= movie.overview %></p>
-                </div>
-            <% } %>
         </div>
+
+        <div class="player-wrapper">
+            <iframe
+                id="mainPlayer"
+                src="<%= ophimLink ? ophimLink : vidsrcLink %>"
+                width="100%"
+                height="100%"
+                frameborder="0"
+                allowfullscreen="true"
+                webkitallowfullscreen="true"                                            
+                mozallowfullscreen="true"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+            </iframe>
+        </div>
+        <p class="server-hint"><i class="fa-solid fa-circle-info"></i> Nếu server chậm hoặc lỗi, hãy đổi sang server còn lại.</p>
     </section>
 </div>
 
