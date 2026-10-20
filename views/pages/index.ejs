@@ -1,8 +1,199 @@
-<section class="popular-movies">
-    <h1 style="text-align: center;">🔥 Phim Phổ Biến Đang Hot</h1>
-    <div class="movie-grid">
-        <% movies.forEach(function(movie) { %>
-            <%- include('../partials/movieCard', { movie: movie }) %>
-                <% }); %>
+<%
+    const GENRE_MAP = {
+        28: 'Hành động', 12: 'Phiêu lưu', 16: 'Hoạt hình', 35: 'Hài hước', 80: 'Tội phạm',
+        99: 'Tài liệu', 18: 'Chính kịch', 10751: 'Gia đình', 14: 'Giả tưởng', 36: 'Lịch sử',
+        27: 'Kinh dị', 10402: 'Âm nhạc', 9648: 'Bí ẩn', 10749: 'Lãng mạn', 878: 'Viễn tưởng',
+        10770: 'TV Movie', 53: 'Giật gân', 10752: 'Chiến tranh', 37: 'Miền Tây'
+    };
+    const list = Array.isArray(movies) ? movies : [];
+    const heroList = list.slice(0, 5);
+    const logos = (typeof heroLogos !== 'undefined' && Array.isArray(heroLogos)) ? heroLogos : [];
+
+    const img = (path, size) => path ? `https://image.tmdb.org/t/p/${size}${path}` : '';
+    const yearOf = (m) => m.release_date ? m.release_date.split('-')[0] : '';
+    const genresOf = (m) => (m.genre_ids || []).slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean).join(' · ');
+
+    const suggested = list.slice(5);
+    const topRated = [...list].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 12);
+    const top10 = list.slice(0, 10);
+    const newest = [...list].sort((a, b) => String(b.release_date || '').localeCompare(String(a.release_date || ''))).slice(0, 12);
+%>
+
+<h1 class="sr-only">CineVerse - Xem phim trực tuyến</h1>
+
+<% if (heroList.length > 0) { %>
+<!-- ============ HERO SLIDER ============ -->
+<section class="hero" id="hero" aria-label="Phim nổi bật">
+    <% heroList.forEach(function(m, i) { %>
+        <article class="hero-slide <%= i === 0 ? 'is-active' : '' %>" data-index="<%= i %>">
+            <img class="hero-bg" src="<%= img(m.backdrop_path || m.poster_path, 'original') %>" alt="" <%= i === 0 ? '' : 'loading=lazy' %>>
+            <div class="hero-shade"></div>
+
+            <div class="hero-body">
+                <span class="hero-eyebrow"><i class="fa-solid fa-fire-flame-curved"></i> #<%= i + 1 %> Thịnh hành hôm nay</span>
+
+                <% if (logos[i]) { %>
+                    <img class="hero-logo" src="<%= img(logos[i], 'w500') %>" alt="<%= m.title %>">
+                <% } else { %>
+                    <h2 class="hero-title"><%= m.title %></h2>
+                <% } %>
+
+                <div class="hero-meta">
+                    <span class="meta-age">13+</span>
+                    <% if (genresOf(m)) { %><span><%= genresOf(m) %></span><% } %>
+                    <% if (yearOf(m)) { %><span class="meta-sep"></span><span><%= yearOf(m) %></span><% } %>
+                    <span class="meta-sep"></span>
+                    <span class="meta-score"><i class="fa-solid fa-star"></i> <%= Number(m.vote_average || 0).toFixed(1) %></span>
+                </div>
+
+                <div class="hero-actions">
+                    <a href="/movies/<%= m.id %>" class="btn btn-primary">
+                        <i class="fa-solid fa-play"></i> PLAY
+                    </a>
+                    <button type="button"
+                            class="btn btn-glass favorite-btn"
+                            data-movie-id="<%= m.id %>"
+                            data-title="<%= m.title %>"
+                            data-poster="<%= m.poster_path || '' %>"
+                            data-vote="<%= m.vote_average || 0 %>"
+                            data-release="<%= m.release_date || '' %>"
+                            data-overview="<%= (m.overview || '').replace(/"/g, '&quot;') %>">
+                        <span class="when-off"><i class="fa-solid fa-plus"></i> MY LIST</span>
+                        <span class="when-on"><i class="fa-solid fa-check"></i> ĐÃ LƯU</span>
+                    </button>
+                </div>
+
+                <% if (m.overview) { %>
+                    <p class="hero-overview"><%= m.overview %></p>
+                <% } %>
+            </div>
+        </article>
+    <% }); %>
+
+    <!-- Thumbnail chọn slide -->
+    <div class="hero-thumbs" role="tablist">
+        <% heroList.forEach(function(m, i) { %>
+            <button type="button" class="hero-thumb <%= i === 0 ? 'is-active' : '' %>" data-index="<%= i %>" aria-label="<%= m.title %>">
+                <img src="<%= img(m.backdrop_path || m.poster_path, 'w300') %>" alt="" loading="lazy">
+                <span class="hero-thumb-bar"></span>
+            </button>
+        <% }); %>
     </div>
 </section>
+<% } %>
+
+<!-- ============ TABS ============ -->
+<nav class="tabs" aria-label="Danh mục">
+    <button type="button" class="tab is-active" id="tabSuggested">SUGGESTED</button>
+    <button type="button" class="tab" data-feature="Danh sách diễn viên">CAST <span class="badge-soon">SOON</span></button>
+    <% if (heroList[0]) { %>
+        <a href="/movies/<%= heroList[0].id %>" class="tab">DETAILS</a>
+    <% } %>
+</nav>
+
+<!-- ============ ROWS ============ -->
+<div class="rows" id="suggestedSection">
+    <% if (suggested.length) { %>
+    <section class="row">
+        <div class="row-head">
+            <h2 class="row-title">Đề xuất cho bạn</h2>
+            <div class="row-nav">
+                <button type="button" class="row-arrow" data-dir="-1" aria-label="Trước"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="row-arrow" data-dir="1" aria-label="Sau"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="row-track">
+            <% suggested.forEach(function(movie) { %>
+                <%- include('../partials/movieCard', { movie: movie }) %>
+            <% }); %>
+        </div>
+    </section>
+    <% } %>
+
+    <% if (top10.length) { %>
+    <section class="row">
+        <div class="row-head">
+            <h2 class="row-title">Top 10 phim hôm nay</h2>
+            <div class="row-nav">
+                <button type="button" class="row-arrow" data-dir="-1" aria-label="Trước"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="row-arrow" data-dir="1" aria-label="Sau"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="row-track">
+            <% top10.forEach(function(m, i) { %>
+                <a href="/movies/<%= m.id %>" class="rank-card movie-card-cinematic" title="<%= m.title %>">
+                    <span class="rank-num"><%= i + 1 %></span>
+                    <div class="rank-poster">
+                        <img src="<%= img(m.poster_path, 'w342') || 'https://placehold.co/342x513/111322/3b82f6?text=CineVerse' %>" alt="<%= m.title %>" loading="lazy">
+                    </div>
+                    <span class="card-title sr-only"><%= m.title %></span>
+                </a>
+            <% }); %>
+        </div>
+    </section>
+    <% } %>
+
+    <% if (topRated.length) { %>
+    <section class="row">
+        <div class="row-head">
+            <h2 class="row-title">Đánh giá cao nhất</h2>
+            <div class="row-nav">
+                <button type="button" class="row-arrow" data-dir="-1" aria-label="Trước"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="row-arrow" data-dir="1" aria-label="Sau"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="row-track">
+            <% topRated.forEach(function(movie) { %>
+                <%- include('../partials/movieCard', { movie: movie }) %>
+            <% }); %>
+        </div>
+    </section>
+    <% } %>
+
+    <% if (newest.length) { %>
+    <section class="row">
+        <div class="row-head">
+            <h2 class="row-title">Mới ra mắt</h2>
+            <div class="row-nav">
+                <button type="button" class="row-arrow" data-dir="-1" aria-label="Trước"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="row-arrow" data-dir="1" aria-label="Sau"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="row-track">
+            <% newest.forEach(function(movie) { %>
+                <%- include('../partials/movieCard', { movie: movie }) %>
+            <% }); %>
+        </div>
+    </section>
+    <% } %>
+
+    <!-- ============ CÁC HÀNG THEO TỪNG THỂ LOẠI (GENRES) ============ -->
+    <% if (typeof genresData !== 'undefined' && Array.isArray(genresData)) { %>
+        <% genresData.forEach(function(g) { %>
+            <% if (g.movies && g.movies.length > 0) { %>
+            <section class="row">
+                <div class="row-head">
+                    <h2 class="row-title"><%= g.title %></h2>
+                    <div class="row-nav">
+                        <button type="button" class="row-arrow" data-dir="-1" aria-label="Trước"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button type="button" class="row-arrow" data-dir="1" aria-label="Sau"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="row-track">
+                    <% g.movies.forEach(function(movie) { %>
+                        <%- include('../partials/movieCard', { movie: movie }) %>
+                    <% }); %>
+                </div>
+            </section>
+            <% } %>
+        <% }); %>
+    <% } %>
+
+    <% if (!list.length) { %>
+        <div class="empty-state">
+            <i class="fa-solid fa-satellite-dish"></i>
+            <h2>Không tải được danh sách phim</h2>
+            <p>Kiểm tra lại kết nối hoặc TMDB token trong file .env.</p>
+        </div>
+    <% } %>
+</div>

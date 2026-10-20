@@ -164,20 +164,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Nếu đang đứng ở trang /favorites mà người dùng gỡ bỏ phim:
                 if (!data.isFavorite && window.location.pathname.startsWith('/favorites')) {
-                    const cardLink = btn.closest('.movie-card-link');
+                    const cardLink = btn.closest('.movie-card-cinematic');
                     if (cardLink) {
                         cardLink.classList.add('removing');
                         setTimeout(() => {
                             cardLink.remove();
 
                             const grid = document.getElementById('favoritesGrid');
-                            if (grid && grid.querySelectorAll('.movie-card-link').length === 0) {
+                            if (grid && grid.querySelectorAll('.movie-card-cinematic').length === 0) {
                                 grid.outerHTML = `
-                                    <div class="empty-favorites" id="emptyFavorites">
-                                        <div class="empty-icon">🎬⭐</div>
-                                        <h2>Chưa có phim yêu thích nào</h2>
-                                        <p>Khám phá các bộ phim hot và nhấn vào biểu tượng ngôi sao <strong>★</strong> tại tiêu đề phim để thêm vào danh sách yêu thích của bạn!</p>
-                                        <a href="/" class="explore-btn">🔥 Khám phá phim ngay</a>
+                                    <div class="empty-state" id="emptyFavorites">
+                                        <i class="fa-regular fa-bookmark"></i>
+                                        <h2>Danh sách của bạn đang trống</h2>
+                                        <p>Bấm biểu tượng bookmark trên thẻ phim hoặc nút <strong>+ MY LIST</strong> để lưu phim.</p>
+                                        <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Khám phá phim</a>
                                     </div>
                                 `;
                             }

@@ -1,28 +1,36 @@
-<% const currentId = movie.movieId || movie.id; %>
-<a href="/movies/<%= currentId %>" class="movie-card-link" data-movie-id="<%= currentId %>">
-    <div class="movie-card">
-        <div class="movie-poster-box">
-            <img src="<%= movie.poster_path ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path : 'https://placehold.co/500x750/1e1e1e/f5c518?text=No+Poster' %>" alt="<%= movie.title %>" loading="lazy">
-        </div>
-        <div class="movie-info">
-            <div class="movie-title-row">
-                <h3 class="movie-card-title" title="<%= movie.title %>">
-                    <%= movie.title %>
-                </h3>
-                <button type="button" 
-                        class="favorite-btn" 
-                        data-movie-id="<%= currentId %>"
-                        data-title="<%= movie.title %>"
-                        data-poster="<%= movie.poster_path || '' %>"
-                        data-vote="<%= movie.vote_average || 0 %>"
-                        data-release="<%= movie.release_date || '' %>"
-                        data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
-                        title="Thêm vào danh sách yêu thích"
-                        aria-label="Yêu thích">
-                    <span class="star-icon">★</span>
-                </button>
-            </div>
-            <p class="rating">⭐ <%= movie.vote_average ? Number(movie.vote_average).toFixed(1) : '0.0' %>/10</p>
-        </div>
-    </div>
-</a>
+<%
+    const currentId = movie.movieId || movie.id;
+    const thumb = movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w780${movie.backdrop_path}`
+        : (movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/780x440/111322/3b82f6?text=CineVerse');
+    const year = movie.release_date ? String(movie.release_date).split('-')[0] : '';
+    const score = movie.vote_average ? Number(movie.vote_average).toFixed(1) : '–';
+%>
+<article class="m-card movie-card-cinematic" data-movie-id="<%= currentId %>">
+    <a href="/movies/<%= currentId %>" class="m-card-link" title="<%= movie.title %>">
+        <img src="<%= thumb %>" alt="<%= movie.title %>" class="m-card-img" loading="lazy">
+        <span class="m-card-shade"></span>
+        <span class="m-card-play"><i class="fa-solid fa-play"></i></span>
+        <span class="m-card-body">
+            <span class="card-title"><%= movie.title %></span>
+            <span class="m-card-meta">
+                <span class="m-card-score"><i class="fa-solid fa-star"></i> <%= score %></span>
+                <% if (year) { %><span class="meta-sep"></span><span><%= year %></span><% } %>
+                <span class="m-card-hd">HD</span>
+            </span>
+        </span>
+    </a>
+    <button type="button"
+            class="favorite-btn m-card-fav"
+            data-movie-id="<%= currentId %>"
+            data-title="<%= movie.title %>"
+            data-poster="<%= movie.poster_path || '' %>"
+            data-vote="<%= movie.vote_average || 0 %>"
+            data-release="<%= movie.release_date || '' %>"
+            data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
+            title="Thêm vào danh sách yêu thích"
+            aria-label="Yêu thích">
+        <i class="fa-regular fa-bookmark when-off"></i>
+        <i class="fa-solid fa-bookmark when-on"></i>
+    </button>
+</article>
