@@ -11,6 +11,20 @@
                 <span class="fav-count-badge" id="favCountBadge" style="display: none;">0</span>
             </a>
             <a href="/search" class="nav-link">Tìm kiếm</a>
+
+            <% if (typeof user !== 'undefined' && user) { %>
+                <div class="user-nav-group">
+                    <span class="user-greeting" title="<%= user.email %>">
+                        <span class="user-icon">👤</span> <%= user.username %>
+                    </span>
+                    <a href="/logout" class="nav-link nav-btn-logout">Đăng xuất</a>
+                </div>
+            <% } else { %>
+                <div class="auth-nav-group">
+                    <a href="/login" class="nav-link nav-btn-login">Đăng nhập</a>
+                    <a href="/register" class="nav-link nav-btn-register">Đăng ký</a>
+                </div>
+            <% } %>
         </nav>
     </div>
 </header>

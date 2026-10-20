@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 4. Hiển thị thông báo Toast nhanh gọn & bắt mắt
-    function showToast(message, type = 'info') {
+    function showToast(message, type = 'info', isHtml = false) {
         let container = document.getElementById('toastContainer');
         if (!container) {
             container = document.createElement('div');
@@ -74,9 +74,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         toast.innerHTML = `
             <span class="toast-icon">${icon}</span>
-            <span class="toast-message">${message}</span>
+            <span class="toast-message"></span>
             <button type="button" class="toast-close" aria-label="Đóng">&times;</button>
         `;
+
+        const msgSpan = toast.querySelector('.toast-message');
+        if (msgSpan) {
+            if (isHtml) {
+                msgSpan.innerHTML = message;
+            } else {
+                msgSpan.textContent = message;
+            }
+        }
 
         toast.querySelector('.toast-close').addEventListener('click', () => {
             toast.classList.add('hide');
@@ -133,6 +142,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Hàm hoàn tác trạng thái nút khi có lỗi hoặc chưa đăng nhập
+        const revertButtons = () => {
+            matchingBtns.forEach((b) => {
+                b.classList.toggle('active', wasActive);
+                b.setAttribute('title', wasActive ? 'Xóa khỏi danh sách yêu thích' : 'Thêm vào danh sách yêu thích');
+                const label = b.querySelector('.fav-label');
+                if (label) {
+                    label.textContent = wasActive ? 'Đã yêu thích' : 'Yêu thích';
+                }
+            });
+        };
+
         try {
             const response = await fetch('/api/favorites/toggle', {
                 method: 'POST',
@@ -148,6 +169,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     overview
                 })
             });
+
+            // Nếu người dùng chưa đăng nhập (HTTP 401)
+            if (response.status === 401) {
+                revertButtons();
+                const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                showToast(
+                    `Vui lòng <a href="/login?redirect=${returnUrl}" style="color: #f5c518; text-decoration: underline; font-weight: 700;">đăng nhập</a> để thêm phim vào danh sách yêu thích!`,
+                    'error',
+                    true
+                );
+                return;
+            }
 
             const data = await response.json();
 
@@ -186,12 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 // Phục hồi lại trạng thái cũ nếu lỗi từ server
-                matchingBtns.forEach((b) => b.classList.toggle('active', wasActive));
+                revertButtons();
                 showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         } catch (error) {
             console.error('Lỗi khi toggle favorite:', error);
-            matchingBtns.forEach((b) => b.classList.toggle('active', wasActive));
+            revertButtons();
             showToast('Không thể kết nối đến máy chủ.', 'error');
         }
     });
