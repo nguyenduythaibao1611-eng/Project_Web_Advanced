@@ -11,11 +11,17 @@
 <body>
     <%- include('../partials/header') %>
 
-        <main>
-            <%- body %>
-        </main>
+    <main>
+        <%- body %>
+    </main>
 
-        <%- include('../partials/footer') %>
+    <!-- Hộp hiển thị thông báo Toast -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <%- include('../partials/footer') %>
+
+    <!-- Script xử lý Yêu thích phim -->
+    <script src="/js/favorite.js"></script>
 </body>
 
 </html>

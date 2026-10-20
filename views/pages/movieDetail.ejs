@@ -60,9 +60,24 @@
         </div>
 
         <div class="info-details">
-            <h1 class="movie-title">
-                <%= movie.title || movie.name %>
-            </h1>
+            <div class="title-with-fav">
+                <h1 class="movie-title">
+                    <%= movie.title || movie.name %>
+                </h1>
+                <button type="button" 
+                        class="favorite-btn detail-fav-btn" 
+                        data-movie-id="<%= movie.id %>"
+                        data-title="<%= movie.title || movie.name %>"
+                        data-poster="<%= movie.poster_path || '' %>"
+                        data-vote="<%= movie.vote_average || 0 %>"
+                        data-release="<%= movie.release_date || '' %>"
+                        data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
+                        title="Thêm vào danh sách yêu thích"
+                        aria-label="Yêu thích">
+                    <span class="star-icon">★</span>
+                    <span class="fav-label">Yêu thích</span>
+                </button>
+            </div>
 
             <% if (movie.original_title && movie.original_title !== movie.title) { %>
                 <h2 class="original-title"><%= movie.original_title %></h2>

@@ -1,0 +1,27 @@
+<div class="favorites-container">
+    <div class="favorites-header">
+        <h1 class="favorites-title">⭐ Danh Sách Phim Yêu Thích</h1>
+        <p class="favorites-subtitle">Kho lưu trữ những bộ phim bạn quan tâm và yêu thích nhất trên CineVerse</p>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+        <div class="favorites-alert-error">
+            <p>⚠️ <%= error %></p>
+        </div>
+    <% } %>
+
+    <% if (movies && movies.length > 0) { %>
+        <div class="movie-grid" id="favoritesGrid">
+            <% movies.forEach(function(movie) { %>
+                <%- include('../partials/movieCard', { movie: movie }) %>
+            <% }); %>
+        </div>
+    <% } else { %>
+        <div class="empty-favorites" id="emptyFavorites">
+            <div class="empty-icon">🎬⭐</div>
+            <h2>Chưa có phim yêu thích nào</h2>
+            <p>Khám phá các bộ phim hot và nhấn vào biểu tượng ngôi sao <strong>★</strong> tại tiêu đề phim để thêm vào danh sách yêu thích của bạn!</p>
+            <a href="/" class="explore-btn">🔥 Khám phá phim ngay</a>
+        </div>
+    <% } %>
+</div>
