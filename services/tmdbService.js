@@ -53,3 +53,42 @@ exports.getMovieDetail = async (movieId) => {
         return null; // Trả về null nếu không tìm thấy phim
     }
 };
+
+/**
+ * 4. Lấy logo chính thức trong suốt của bộ phim từ TMDB (Title Logo như Disney+/Netflix)
+ */
+exports.getMovieLogo = async (movieId) => {
+    try {
+        const response = await tmdbApi.get(`/movie/${movieId}/images?include_image_language=en,vi,null`);
+        if (response.data.logos && response.data.logos.length > 0) {
+            // Ưu tiên logo ngôn ngữ tiếng Anh hoặc tiếng Việt
+            const bestLogo = response.data.logos.find(l => l.iso_639_1 === 'en' || l.iso_639_1 === 'vi') || response.data.logos[0];
+            return bestLogo.file_path;
+        }
+        return null;
+    } catch (error) {
+        console.warn(`Không lấy được logo cho phim ${movieId}:`, error.message);
+        return null;
+    }
+};
+
+/**
+ * 5. Lấy danh sách phim theo thể loại (Genre ID) từ TMDB Discover API
+ */
+exports.getMoviesByGenre = async (genreId, limit = 15) => {
+    try {
+        const response = await tmdbApi.get('/discover/movie', {
+            params: {
+                with_genres: genreId,
+                language: 'vi-VN',
+                sort_by: 'popularity.desc',
+                include_adult: false,
+                page: 1
+            }
+        });
+        return (response.data.results || []).slice(0, limit);
+    } catch (error) {
+        console.error(`Lỗi lấy phim theo thể loại ${genreId}:`, error.message);
+        return [];
+    }
+};
