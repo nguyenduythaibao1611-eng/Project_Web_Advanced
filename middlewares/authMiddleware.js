@@ -48,7 +48,7 @@ const checkUser = async (req, res, next) => {
             req.user = null;
             res.locals.user = null;
         }
-    } catch (err) {
+    } catch (_err) {
         // Token hết hạn hoặc không hợp lệ -> xóa cookie
         res.clearCookie(COOKIE_NAME, {
             httpOnly: true,
