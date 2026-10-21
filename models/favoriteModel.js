@@ -2,10 +2,14 @@ const mongoose = require('mongoose');
 
 const favoriteSchema = new mongoose.Schema(
     {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
         movieId: {
             type: Number,
-            required: true,
-            unique: true
+            required: true
         },
         title: {
             type: String,
@@ -39,6 +43,9 @@ const favoriteSchema = new mongoose.Schema(
         toObject: { virtuals: true }
     }
 );
+
+// Index phức hợp để mỗi user chỉ thích 1 phim 1 lần và hỗ trợ tìm kiếm nhanh
+favoriteSchema.index({ userId: 1, movieId: 1 }, { unique: true });
 
 // Virtual getter để EJS truy cập movie.id như dữ liệu TMDB (trả về movieId số nguyên)
 favoriteSchema.virtual('id').get(function () {

@@ -54,7 +54,7 @@
             </nav>
         </div>
 
-        <!-- Nhóm bên phải: Thông báo + Avatar Profile -->
+        <!-- Nhóm bên phải: Thông báo + Avatar Profile / Auth -->
         <div class="header-right">
             <!-- Icon Chuông thông báo (Bấm vào hiện dropdown thông báo) -->
             <div class="notification-wrapper">
@@ -79,21 +79,28 @@
                 </div>
             </div>
 
-            <!-- Avatar người dùng -->
-            <div class="user-profile-wrapper">
-                <div class="avatar-ring" id="userAvatarBtn" title="Tài khoản người dùng">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="User Profile" class="avatar-img">
-                </div>
-                <div class="user-dropdown" id="userDropdown">
-                    <div class="user-dropdown-header">
-                        <span class="user-name">Khách xem phim</span>
-                        <span class="user-role">Thành viên VIP</span>
+            <!-- Avatar người dùng hoặc Đăng nhập / Đăng ký -->
+            <% if (typeof user !== 'undefined' && user) { %>
+                <div class="user-profile-wrapper">
+                    <div class="avatar-ring" id="userAvatarBtn" title="<%= user.username %> (<%= user.email %>)">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="<%= user.username %>" class="avatar-img">
                     </div>
-                    <hr class="user-dropdown-divider">
-                    <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
-                    <a href="javascript:void(0)" class="user-dropdown-link nav-disabled" data-feature="Cài đặt tài khoản"><i class="fa-solid fa-gear"></i> Cài đặt</a>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-dropdown-header">
+                            <span class="user-name"><%= user.username %></span>
+                            <span class="user-role"><%= user.email %></span>
+                        </div>
+                        <hr class="user-dropdown-divider">
+                        <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
+                        <a href="/logout" class="user-dropdown-link" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+                    </div>
                 </div>
-            </div>
+            <% } else { %>
+                <div class="auth-nav-group">
+                    <a href="/login" class="nav-btn-login">Đăng nhập</a>
+                    <a href="/register" class="nav-btn-register">Đăng ký</a>
+                </div>
+            <% } %>
         </div>
     </div>
 </header>
