@@ -1,6 +1,6 @@
 # 🎬 CINEVERSE — Nền Tảng Trực Tuyến Điện Ảnh Đỉnh Cao (Full Documentation & Technical Manual)
 
-> **CineVerse** là nền tảng streaming phim điện ảnh trực tuyến chuẩn quốc tế (lấy cảm hứng từ Disney+ và Marvel Studios). Dự án được xây dựng theo kiến trúc **MVC-Service**, tích hợp tổng hợp dữ liệu từ nhiều nguồn API (TMDB, OPhim, VidSrc), quản lý người dùng với JWT Cookie và lưu trữ phim yêu thích cá nhân hóa trên MongoDB.
+> **CineVerse** là nền tảng streaming phim điện ảnh trực tuyến chuẩn quốc tế (lấy cảm hứng từ Disney+ và Marvel Studios). Dự án được xây dựng theo kiến trúc **MVC-Service**, tích hợp tổng hợp dữ liệu từ nhiều nguồn API (TMDB, OPhim, VidSrc), quản lý người dùng với JWT Cookie, lưu trữ ảnh media trên **Supabase Cloud Storage** và cơ sở dữ liệu phân tán trên **MongoDB Atlas**.
 
 ---
 
@@ -13,9 +13,11 @@
    - [4.2. Hệ thống Xác thực & Phân quyền (Auth & Security)](#42-hệ-thống-xác-thực--phân-quyền-auth--security)
    - [4.3. Hệ thống Danh sách Yêu thích (Favorites & Optimistic UI)](#43-hệ-thống-danh-sách-yêu-thích-favorites--optimistic-ui)
    - [4.4. Hệ thống Hero Banner & Cơ chế Chống Giật (Anti-Jitter)](#44-hệ-thống-hero-banner--cơ-chế-chống-giật-anti-jitter)
+   - [4.5. Hệ thống Worker Cào Dữ Liệu & Pipeline Đa Nguồn (Crawler & Supabase Storage)](#45-hệ-thống-worker-cào-dữ-liệu--pipeline-đa-nguồn-crawler--supabase-storage)
 5. [Cẩm Nang Bắt Bệnh & Khắc Phục Sự Cố (Troubleshooting Matrix)](#5-cẩm-nang-bắt-bệnh--khắc-phục-sự-cố-troubleshooting-matrix)
 6. [Hướng dẫn Cài đặt & Khởi chạy Dự án](#6-hướng-dẫn-cài-đặt--khởi-chạy-dự-án)
 7. [Quy chuẩn Kiểm tra Code (Linting & Code Quality)](#7-quy-chuẩn-kiểm-tra-code-linting--code-quality)
+8. [Phân Công Nhiệm Vụ & Tiến Độ Phát Triển (Project Roadmap)](#8-phân-công-nhiệm-vụ--tiến-độ-phát-triển-project-roadmap)
 
 ---
 
@@ -51,8 +53,9 @@ CineVerse vận hành theo mô hình kiến trúc phân lớp chuẩn:
                  Gọi nghiệp vụ  ▼            Truy vấn DB    ▼
     ┌──────────────────────────────────────┐     ┌────────────────────────┐
     │              SERVICES                │     │         MODELS         │
-    │ - tmdbService: Gọi TheMovieDB API    │     │ - userModel: bcrypt    │
-    │ - ophimService: Dò Vietsub & Embed   │     │ - favoriteModel: Index │
+    │ - tmdbService: Gọi TheMovieDB API    │     │ - movieModel: Schema DB│
+    │ - ophimService: Dò Vietsub & m3u8    │     │ - userModel: bcrypt    │
+    │ - supabaseService: Upload Media CDN  │     │ - favoriteModel: Index │
     └──────────────────────────────────────┘     └────────────────────────┘
                                 │                           │
                                 └─────────────┬─────────────┘
@@ -72,7 +75,8 @@ CineVerse vận hành theo mô hình kiến trúc phân lớp chuẩn:
 ```
 cineverse/
 ├── config/
-│   └── db.js                       # Kết nối CSDL MongoDB thông qua Mongoose
+│   ├── db.js                       # Kết nối CSDL MongoDB Atlas thông qua Mongoose
+│   └── supabase.js                 # Khởi tạo SDK kết nối Supabase Cloud Storage
 │
 ├── controllers/
 │   ├── movieController.js          # Điều phối Trang chủ (Hero Banner, Thể loại) & Trang Chi tiết phim
@@ -84,6 +88,7 @@ cineverse/
 │   └── authMiddleware.js           # Kiểm tra token JWT (checkUser), Bắt buộc đăng nhập (requireAuth), Sanitize URL
 │
 ├── models/
+│   ├── movieModel.js               # Schema Phim chuẩn (Text Index search, đa server m3u8 & iframe, genres AI)
 │   ├── userModel.js                # Schema Người dùng (Username, Email, Password băm bcrypt)
 │   ├── favoriteModel.js            # Schema Phim lưu (UserId, MovieId, Title, Poster, Index unique)
 │   └── chatLogModel.js             # [Khung sườn] Dự phòng lưu nhật ký chat AI
@@ -95,16 +100,20 @@ cineverse/
 │   ├── authRoutes.js               # Định tuyến: /login, /register, /logout, /api/auth/me
 │   └── assistantRoutes.js          # [Khung sườn] Định tuyến cho trợ lý ảo
 │
+├── scripts/
+│   └── crawlMovies.js              # Worker tự động cào phim từ OPhim, upload ảnh Supabase & ghép VidSrc
+│
 ├── services/
 │   ├── tmdbService.js              # Gọi TMDB API: Phim hot, thể loại, chi tiết, logo trong suốt (getMovieLogo)
-│   ├── ophimService.js             # Gọi OPhim/PhimAPI: Tìm phim theo tên, bóc tách link embed tập 1
+│   ├── ophimService.js             # Gọi OPhim/PhimAPI: Tìm phim, bóc tách link m3u8, lấy danh sách phân trang
+│   ├── supabaseService.js          # Xử lý upload ảnh tự động lên Supabase Storage (uploadImageFromUrl)
 │   └── geminiService.js            # [Khung sườn] Gọi Gemini AI gợi ý phim
 │
 ├── views/                          # TOÀN BỘ GIAO DIỆN (SERVER-SIDE RENDERING EJS)
 │   ├── layouts/
 │   │   └── main.ejs                # Khung HTML bao ngoài: Head, Font, CSS, Header, Main, Footer, Toast, JS
 │   ├── partials/
-│   │   ├── header.ejs              # Thanh điều hướng trên cùng: Logo, Menu, Tìm kiếm, Chuông, User Profile
+│   │   ├── header.ejs              # Thanh điều hướng: Logo, Menu, Tìm kiếm, Chuông, User Profile
 │   │   ├── footer.ejs              # Chân trang thông tin, bản quyền, liên kết xã hội
 │   │   ├── movieCard.ejs           # Component thẻ phim chuẩn điện ảnh (Poster, Nút yêu thích, Điểm, HD)
 │   │   ├── aiModal.ejs             # [Khung sườn] Hộp thoại popup trợ lý AI
@@ -122,19 +131,22 @@ cineverse/
 │   ├── css/
 │   │   └── style.css               # Hệ thống Design System: Biến CSS, Theme tối, Typography, Slider, Glassmorphism
 │   └── js/
-│       ├── ui-interactions.js      # Điều khiển tương tác UI: Hero slider tự động/dừng khi hover, cuộn hàng, dropdown
-│       ├── favorite.js             # Xử lý click Bookmark: Optimistic UI, gọi API toggle, cập nhật Badge, Toast
+│       ├── ui-interactions.js      # Điều khiển UI: Hero slider tự động/dừng khi hover, cuộn hàng, dropdown
+│       ├── favorite.js             # Xử lý Bookmark: Optimistic UI, gọi API toggle, cập nhật Badge, Toast
 │       ├── chat.js                 # [Khung sườn] Client JS cho AI chat
 │       ├── main.js                 # [Khung sườn] Client JS bổ trợ
 │       └── trailer.js              # [Khung sườn] Client JS mở trailer
 │
-├── local-docs/                     # Tài liệu nội bộ (không commit)
-├── .env                            # Chứa biến môi trường bí mật (PORT, TMDB_TOKEN, MONGODB_URI, JWT_SECRET...)
-├── .env.example                    # File mẫu hướng dẫn khai báo biến môi trường
+├── local-docs/                     # Tài liệu kỹ thuật nội bộ nhóm phát triển
+│   ├── Luong-API.md                # Tài liệu phân tích luồng gọi API
+│   └── Kien-Truc-Worker-Crawl-Du-Lieu.md # Cẩm nang vận hành Worker cào phim, cấu trúc đa server & CDN ảnh
+│
+├── .env                            # Chứa biến môi trường bí mật (không commit lên GitHub)
+├── .env.example                    # File mẫu hướng dẫn khai báo biến môi trường cho thành viên
 ├── eslint.config.mjs               # Cấu hình kiểm tra cú pháp ESLint cho cả Node.js và Client Browser
 ├── server.js                       # Điểm khởi chạy ứng dụng (Bootstrap Server, kết nối DB, app.listen)
 ├── app.js                          # Cấu hình Express, View engine, Cookie parser, Static folder, Root routes
-└── package.json                    # Khai báo thư viện phụ thuộc và scripts chạy (dev, start, lint)
+└── package.json                    # Khai báo thư viện phụ thuộc và scripts chạy (dev, start, lint, crawl)
 ```
 
 ---
@@ -275,21 +287,62 @@ https://vidsrc.me/embed/movie?tmdb={id}   1. Tìm theo original_title (VD: "Dead
 
 ---
 
+### 4.5. Hệ thống Worker Cào Dữ Liệu & Pipeline Đa Nguồn (Crawler & Supabase Storage)
+Hệ thống giải quyết bài toán: **Làm chủ kho dữ liệu phim độc lập, khắc phục triệt để lỗi chết ảnh và cung cấp đa nguồn phát (HLS + Iframe dự phòng).**
+
+```
+[npm run crawl -- --pages=3]
+         │
+         ▼
+Gọi API OPhim: /danh-sach/phim-moi-cap-nhat
+         │
+         ▼
+Kiểm tra MongoDB Atlas ──(Đã có)──➔ Bỏ qua (Skip - Idempotent)
+         │ (Chưa có)
+         ▼
+Gọi API Chi tiết: /phim/:slug
+         ├─────────────────────────────────────────┐
+         │                                         │
+         ▼                                         ▼
+Tải ảnh Poster & Backdrop                Bóc tách luồng xem:
+         │                                - Server 1: OPhim HLS (link m3u8)
+         ▼                                - Server 2: VidSrc Iframe (nếu có tmdb.id)
+Đẩy lên Supabase Storage bucket                   │
+         │                                        │
+         ▼                                        ▼
+Nhận CDN URL vĩnh viễn ──────────────────➔ Đóng gói vào Movie Schema
+                                                  │
+                                                  ▼
+                                      Lưu vào MongoDB Atlas (Cluster0)
+```
+
+1. **Chống trùng lặp tuyệt đối (Idempotency):**
+   * Trước khi cào chi tiết, script luôn tra cứu `Movie.findOne({ slug })`. Nếu phim đã tồn tại trong database, script sẽ lập tức bỏ qua (`Skip`), không tốn băng thông và không bao giờ bị lỗi trùng khóa (Duplicate Key).
+2. **Khắc phục lỗi "chết ảnh" bằng Supabase Storage:**
+   * Thay vì lưu URL ảnh nguồn của web lậu (rất dễ bị die sau vài tuần), worker dùng `axios` tải ảnh dạng binary `Buffer` và dùng SDK `@supabase/supabase-js` tải lên bucket `cineverse-movies` ở chế độ Public CDN.
+3. **Đa nguồn phát trong từng bộ phim:**
+   * Mảng `danh_sach_server` lưu trữ cả server **OPhim VIP (HLS m3u8)** lẫn server **VidSrc Dự Phòng (Iframe)**. Khi web nguồn bị sự cố, người xem chỉ cần đổi server là xem phim tiếp tục mà không bị gián đoạn.
+4. **Bảo vệ IP (Throttling Delay):**
+   * Script nghỉ 800ms giữa mỗi phim để tránh bị máy chủ API nguồn chặn IP.
+
+---
+
 ## 5. CẨM NANG BẮT BỆNH & KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING MATRIX)
 
 > **Khi gặp lỗi trên màn hình hoặc terminal, tra cứu bảng này để xử lý ngay:**
 
 | Triệu chứng nhìn thấy (Symptom) | Nguyên nhân cốt lõi (Root Cause) | File liên quan | Cách xử lý dứt điểm |
 | :--- | :--- | :--- | :--- |
+| **MongoDB Atlas báo lỗi: `MongooseServerSelectionError: connection timed out` khi thành viên kết nối** | Địa chỉ IP của máy thành viên ở nhà chưa được cấp quyền (Whitelist) trên MongoDB Atlas. | [MongoDB Atlas Console](https://cloud.mongodb.com) | Vào mục **Security -> Network Access**, thêm IP `0.0.0.0/0` (Allow Access from Anywhere) rồi bấm Confirm. |
+| **Ảnh Poster hoặc Backdrop trên web bị vỡ hoặc báo lỗi 403 Forbidden** | Bucket `cineverse-movies` trên Supabase Storage đang ở chế độ Private (Riêng tư). | [Supabase Storage](https://supabase.com) | Vào mục **Storage -> cineverse-movies**, vào phần cài đặt bucket và gạt công tắc **Public bucket** sang **ON**. |
 | **Trang chủ trống trơn, hiện icon chảo vệ tinh kèm dòng chữ "Không tải được danh sách phim"** | Khóa `TMDB_TOKEN` trong `.env` bị thiếu hoặc mang giá trị placeholder mẫu (`your_tmdb_bearer_token_here`), dẫn tới TMDB trả về mã lỗi 401. | [`.env`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env) | Mở file `.env`, dán Bearer Token TMDB hợp lệ bắt đầu bằng `eyJhbGciOi...` vào dòng `TMDB_TOKEN`. Khởi động lại server. |
-| **Terminal báo lỗi: `Error: Cannot find module 'cookie-parser'` hoặc `bcryptjs` / `jsonwebtoken`** | Vừa chuyển branch hoặc pull code mới có bổ sung thư viện mới nhưng chưa cài đặt vào `node_modules` máy cục bộ. | [`package.json`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/package.json) | Mở terminal gõ: `npm install` |
+| **Terminal báo lỗi: `Error: Cannot find module '@supabase/supabase-js'` hoặc `cookie-parser`** | Vừa chuyển branch hoặc pull code mới có bổ sung thư viện mới nhưng chưa cài đặt vào `node_modules` máy cục bộ. | [`package.json`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/package.json) | Mở terminal gõ: `npm install` |
 | **Banner Hero Slider bị giật nảy lên, chữ chớp tắt mỗi khi di chuột vào hoặc ra khỏi banner** | File CSS bị mất thuộc tính `scaleX` hoặc file JS bị gắn lệnh gọi `go(current)` ở sự kiện `mouseleave`. | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) & [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) | Đảm bảo `.hero-thumb-bar` dùng `transform: scaleX(0)` và trong JS dùng hàm `pause()` / `resume()` như đã hướng dẫn ở Mục 4.4. |
 | **Bấm vào ngôi sao / bookmark thẻ phim nhưng không lưu được, hiện Toast màu đỏ báo lỗi** | Người dùng chưa đăng nhập tài khoản (Server trả về mã 401 Unauthorized theo chính sách bảo mật). | [`middlewares/authMiddleware.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/middlewares/authMiddleware.js) | Bấm vào nút `Đăng nhập` trên Header hoặc link trên Toast để đăng nhập tài khoản trước khi lưu phim. |
-| **Chạy lệnh `npm run lint` bị báo đỏ hàng loạt: `'document' is not defined` hoặc `'window' is not defined`** | Cấu hình ESLint áp đặt môi trường Node.js cho toàn bộ dự án mà quên cấp quyền `globals.browser` cho thư mục `public/`. | [`eslint.config.mjs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/eslint.config.mjs) | Cấu hình thêm `{ files: ["public/**/*.js"], languageOptions: { globals: globals.browser } }` trong `eslint.config.mjs`. |
-| **Terminal Git báo: `CONFLICT (content): Merge conflict in views/pages/movieDetail.ejs`** | Xảy ra khi gộp code (merge/pull) giữa các nhánh có cùng chỉnh sửa ở trang chi tiết phim. | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs) | Chạy lệnh `git checkout --theirs views/pages/movieDetail.ejs` để lấy bản của `main`, sau đó `git add .` và `git commit`. |
+| **Chạy lệnh `npm run lint` bị báo đỏ: `'document' is not defined` hoặc `'window' is not defined`** | Cấu hình ESLint áp đặt môi trường Node.js cho toàn bộ dự án mà quên cấp quyền `globals.browser` cho thư mục `public/`. | [`eslint.config.mjs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/eslint.config.mjs) | Cấu hình thêm `{ files: ["public/**/*.js"], languageOptions: { globals: globals.browser } }` trong `eslint.config.mjs`. |
+| **Terminal Git báo: `CONFLICT (modify/delete): .env deleted in HEAD and modified in origin/main`** | Xảy ra khi file `.env` đã được gỡ bỏ khỏi Git tracking để bảo mật nhưng nhánh khác vẫn còn track file này. | Git Cache | Chạy lệnh `git rm .env`, commit giải quyết xung đột, sau đó tạo lại file `.env` cục bộ trên máy. |
 | **Video Server 1 (Vietsub) không hiển thị nút hoặc báo không tìm thấy tập phim** | Phim này trên kho OPhim chưa có bản dịch hoặc phim quá mới. | [`services/ophimService.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/services/ophimService.js) | Cơ chế Fallback đã tự động chuyển sang `Server 2 · Bản gốc` (VidSrc), người dùng vẫn xem được bình thường. |
 | **Đăng ký tài khoản mới báo lỗi: "Tên người dùng này đã có người sử dụng" hoặc "Email đã được đăng ký"** | Vi phạm ràng buộc duy nhất (Unique index) trong CSDL MongoDB. | [`models/userModel.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/models/userModel.js) | Nhập tên người dùng hoặc địa chỉ email khác chưa từng đăng ký. |
-| **MongoDB báo lỗi kết nối: `❌ Lỗi kết nối MongoDB: connect ECONNREFUSED 127.0.0.1:27017`** | Dịch vụ MongoDB cục bộ trên máy chưa được khởi chạy. | [`config/db.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/config/db.js) | Bật MongoDB Compass hoặc chạy lệnh khởi động `mongod` / Service MongoDB trên Windows Services. |
 
 ---
 
@@ -297,32 +350,45 @@ https://vidsrc.me/embed/movie?tmdb={id}   1. Tìm theo original_title (VD: "Dead
 
 ### Yêu cầu tiên quyết:
 - **Node.js**: Phiên bản 18 trở lên (Khuyến nghị bản LTS).
-- **MongoDB**: Đã cài đặt MongoDB Community Server hoặc có kết nối MongoDB Atlas Cloud.
+- **MongoDB**: Kết nối MongoDB Atlas Cloud hoặc MongoDB Compass cục bộ.
+- **Supabase**: Tài khoản Supabase với 1 bucket Storage tên `cineverse-movies` (chế độ Public).
 
 ### Các bước cài đặt:
 
-1. **Cài đặt toàn bộ thư viện phụ thuộc:**
+1. **Clone mã nguồn và cài đặt toàn bộ thư viện phụ thuộc:**
    ```bash
+   git clone https://github.com/nguyenduythaibao1611-eng/Project_Web_Advanced.git
+   cd Project_Web_Advanced
    npm install
    ```
 
 2. **Cấu hình file biến môi trường [`.env`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env):**
-   Tạo file `.env` tại thư mục gốc của dự án với các thông số mẫu:
+   Tạo file `.env` tại thư mục gốc của dự án (dựa theo mẫu [`.env.example`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env.example)):
    ```env
    PORT=5000
-   MONGODB_URI=mongodb://127.0.0.1:27017/cineverse
-   JWT_SECRET=cineverse_super_secret_jwt_key_2026_xyz
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/cineverse?retryWrites=true&w=majority
+   JWT_SECRET=your_jwt_secret_key_here
    TMDB_BASE_URL=https://api.themoviedb.org/3
-   TMDB_TOKEN=eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhMzQxMTg5ZWRiMWNjYjY1OTY3OTUxMDM4NGQ4NTA1YiIsIm5iZiI6MTc5MTc3NjY1NC4xMiwic3ViIjoiNmFjYzU3OGU1NTcyOTZkNDFjYmZiZWI1Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.cWN6Lt6HkDonhYzgPM16Smi79mxj_Jl3SqpvZJpaLaU
+   TMDB_TOKEN=your_tmdb_bearer_token_here
    OPHIM_BASE_URL=https://ophim1.com
+   SUPABASE_URL=https://your-project-id.supabase.co
+   SUPABASE_KEY=your_supabase_secret_key
+   SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+   SUPABASE_BUCKET=cineverse-movies
    ```
 
-3. **Chạy ứng dụng trong môi trường phát triển (Tự động tải lại khi sửa code):**
+3. **Cào dữ liệu phim mẫu vào Database & Supabase (Khuyên dùng):**
+   ```bash
+   # Cào 3 trang mới nhất (~72 bộ phim chuẩn đa server & CDN ảnh):
+   npm run crawl -- --pages=3
+   ```
+
+4. **Chạy ứng dụng trong môi trường phát triển:**
    ```bash
    npm run dev
    ```
 
-4. **Truy cập ứng dụng:**
+5. **Truy cập ứng dụng:**
    Mở trình duyệt web và truy cập địa chỉ: [http://localhost:5000](http://localhost:5000)
 
 ---
@@ -339,6 +405,16 @@ Dự án áp dụng bộ quy tắc kiểm tra cú pháp hiện đại nhất c�
   - Code JavaScript tầng Client trong thư mục `public/` chạy với môi trường `globals.browser`.
   - Các biến trong khối `catch` nếu không sử dụng phải đặt tiền tố dấu gạch dưới (VD: `_err`).
   - Dự án phải luôn đảm bảo kết quả: **0 errors, 0 warnings** trước khi tạo Pull Request gộp code.
+
+---
+
+## 8. PHÂN CÔNG NHIỆM VỤ & TIẾN ĐỘ PHÁT TRIỂN (PROJECT ROADMAP)
+
+| Thành viên | Vai trò chính | Nhiệm vụ trọng tâm | Tiến độ |
+| :--- | :--- | :--- | :---: |
+| **Nguyễn Duy Thái Bảo** | Trưởng nhóm / Backend & Core / AI Engine / DevOps | - Thiết lập MongoDB Atlas & Movie Model Schema<br>- Cấu hình Supabase Storage CDN<br>- Xây dựng Worker cào phim OPhim & ghép VidSrc<br>- Xây dựng thuật toán AI Recommendation (Phase 5)<br>- Quản lý upload ảnh Admin & Kiểm thử Sentry | 🟢 **Hoàn thành Phase 1 & 2** (Vượt tiến độ) |
+| **Phan Lê Phương Nam** | Frontend Lead / UI-UX / Streaming Player | - Thiết kế giao diện Streaming Disney+/Marvel<br>- Xây dựng trang danh sách Movies & Thanh Search realtime<br>- Tích hợp Trình phát Player HLS.js & Iframe<br>- Màn hình Onboarding khảo sát sở thích (cho AI)<br>- UI/UX Bảng điều khiển Admin Dashboard | 🟡 Đang triển khai Phase 3 & 4 |
+| **Nguyễn Đăng Nguyên** | Backend / Security & Auth / Business Logic | - API Đăng ký / Đăng nhập với JWT + bcrypt (Done)<br>- Quản lý Session Token (1 tài khoản / 1 thiết bị)<br>- API lưu Lịch sử xem (tọa độ giây, tập hiện tại)<br>- Logic phân quyền giới hạn xem Free (5 phút) / VIP<br>- Bộ API CRUD Quản trị Phim & Cấp quyền VIP | 🟡 Đang triển khai Phase 3 & 4 |
 
 ---
 
