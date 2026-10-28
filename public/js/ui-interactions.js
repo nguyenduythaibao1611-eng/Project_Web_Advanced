@@ -44,28 +44,39 @@ document.addEventListener('DOMContentLoaded', () => {
         [document.getElementById('searchToggleBtn'), document.getElementById('searchExpandBar')]
     ].filter(([btn, panel]) => btn && panel);
 
+    function setPanel(btn, panel, open) {
+        panel.classList.toggle('active', open);
+        btn.setAttribute('aria-expanded', String(open));
+        if (panel.id === 'searchExpandBar') panel.inert = !open;
+    }
+
     pairs.forEach(([btn, panel]) => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const willOpen = !panel.classList.contains('active');
-            pairs.forEach(([, p]) => p.classList.remove('active'));
-            panel.classList.toggle('active', willOpen);
+            pairs.forEach(([b, p]) => setPanel(b, p, false));
+            setPanel(btn, panel, willOpen);
             const input = panel.querySelector('input');
             if (willOpen && input) input.focus();
         });
         panel.addEventListener('click', (e) => e.stopPropagation());
     });
 
-    document.addEventListener('click', () => pairs.forEach(([, p]) => p.classList.remove('active')));
+    document.addEventListener('click', () => pairs.forEach(([b, p]) => setPanel(b, p, false)));
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') pairs.forEach(([, p]) => p.classList.remove('active'));
+        if (e.key === 'Escape') pairs.forEach(([b, p]) => {
+            if (p.contains(document.activeElement)) b.focus();
+            setPanel(b, p, false);
+        });
     });
 
     const closeSearch = document.getElementById('quickSearchClose');
     const searchInput = document.getElementById('quickSearchInput');
     if (closeSearch) {
         closeSearch.addEventListener('click', () => {
-            document.getElementById('searchExpandBar').classList.remove('active');
+            const toggle = document.getElementById('searchToggleBtn');
+            setPanel(toggle, document.getElementById('searchExpandBar'), false);
+            toggle.focus();
             if (searchInput) {
                 searchInput.value = '';
                 searchInput.dispatchEvent(new Event('input'));
@@ -73,14 +84,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Lọc nhanh các thẻ phim đang có trên trang
+    // Gợi ý từ kho phim, hủy request cũ để kết quả luôn khớp từ khóa mới.
     if (searchInput) {
+        const suggestions = document.getElementById('searchSuggestions');
+        const status = document.getElementById('searchStatus');
+        const list = document.getElementById('searchSuggestionList');
+        let timer;
+        let request;
         searchInput.addEventListener('input', () => {
-            const q = searchInput.value.toLowerCase().trim();
-            document.querySelectorAll('.movie-card-cinematic').forEach((card) => {
-                const t = (card.querySelector('.card-title') || {}).textContent || '';
-                card.style.display = !q || t.toLowerCase().includes(q) ? '' : 'none';
-            });
+            clearTimeout(timer);
+            if (request) request.abort();
+            const q = searchInput.value.trim();
+            list.replaceChildren();
+            suggestions.hidden = q.length < 2;
+            status.textContent = 'Đang tìm phim…';
+            if (q.length < 2) return;
+            request = new AbortController();
+            const signal = request.signal;
+            timer = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal });
+                    if (!response.ok) throw new Error('Search failed');
+                    const { movies } = await response.json();
+                    if (signal.aborted) return;
+                    status.textContent = movies.length ? 'Phim gợi ý · Nhấn Enter để xem tất cả' : 'Không có gợi ý phù hợp. Nhấn Enter để tìm kiếm.';
+                    movies.forEach(movie => {
+                        const item = document.createElement('li');
+                        const link = document.createElement('a');
+                        link.href = `/movies/${encodeURIComponent(movie.id)}`;
+                        link.textContent = `${movie.title}${movie.release_date ? ` (${movie.release_date.slice(0, 4)})` : ''}`;
+                        item.appendChild(link);
+                        list.appendChild(item);
+                    });
+                } catch {
+                    if (!signal.aborted) status.textContent = 'Chưa tải được gợi ý. Nhấn Enter để thử tìm kiếm.';
+                }
+            }, 300);
+        });
+        searchInput.form.addEventListener('submit', (event) => {
+            searchInput.value = searchInput.value.trim();
+            if (!searchInput.value) event.preventDefault();
         });
     }
 

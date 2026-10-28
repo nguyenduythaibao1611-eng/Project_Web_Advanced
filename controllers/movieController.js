@@ -1,6 +1,55 @@
 const tmdbService = require('../services/tmdbService');
 const ophimService = require('../services/ophimService');
 
+function readSearch(req) {
+    const query = req.query.q;
+    const page = req.query.page === undefined ? '1' : req.query.page;
+    if ((query !== undefined && typeof query !== 'string') ||
+        (typeof query === 'string' && query.length > 200) ||
+        typeof page !== 'string' || !/^[1-9]\d{0,2}$/.test(page) || Number(page) > 500) {
+        return null;
+    }
+    return { keyword: (query || '').trim(), page: Number(page) };
+}
+
+exports.search = async (req, res) => {
+    const search = readSearch(req);
+    const data = { title: 'Tìm kiếm phim | CineVerse', keyword: search?.keyword || '',
+        movies: [], page: search?.page || 1, totalPages: 0, totalResults: 0, error: '' };
+    if (!search) {
+        data.error = 'Từ khóa tối đa 200 ký tự và số trang từ 1 đến 500.';
+        return res.status(400).render('pages/search', data);
+    }
+    try {
+        if (search.keyword) {
+            const result = await tmdbService.searchMovies(search.keyword, search.page);
+            data.movies = result.results;
+            data.totalPages = Math.min(result.total_pages, 500);
+            data.totalResults = result.total_results;
+        }
+        return res.render('pages/search', data);
+    } catch (error) {
+        console.error('Lỗi tìm kiếm TMDB:', error.message);
+        data.error = 'Chưa thể tải kết quả. Vui lòng thử lại sau.';
+        return res.status(502).render('pages/search', data);
+    }
+};
+
+exports.searchSuggestions = async (req, res) => {
+    const search = readSearch(req);
+    if (!search) return res.status(400).json({ error: 'Từ khóa không hợp lệ.' });
+    if (search.keyword.length < 2) return res.json({ movies: [] });
+    try {
+        const result = await tmdbService.searchMovies(search.keyword);
+        return res.json({ movies: result.results.slice(0, 5).map(movie => ({
+            id: movie.id, title: movie.title, release_date: movie.release_date
+        })) });
+    } catch (error) {
+        console.error('Lỗi gợi ý TMDB:', error.message);
+        return res.status(502).json({ error: 'Không tải được gợi ý. Nhấn Enter để thử tìm kiếm.' });
+    }
+};
+
 /**
  * 1. Lấy danh sách phim phổ biến cho trang chủ
  */

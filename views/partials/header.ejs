@@ -42,14 +42,19 @@
 
                 <!-- 6. Nút Tìm kiếm Search -->
                 <div class="search-trigger-box">
-                    <button type="button" class="icon-btn search-toggle-btn" id="searchToggleBtn" aria-label="Tìm kiếm" title="Tìm kiếm phim">
+                    <button type="button" class="icon-btn search-toggle-btn" id="searchToggleBtn" aria-label="Tìm kiếm" title="Tìm kiếm phim" aria-controls="searchExpandBar" aria-expanded="false">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </button>
                     <!-- Input tìm kiếm mở rộng -->
-                    <div class="search-expand-bar" id="searchExpandBar">
-                        <input type="text" id="quickSearchInput" placeholder="Tìm tên phim..." autocomplete="off">
+                    <form class="search-expand-bar" id="searchExpandBar" action="/search" method="get" role="search" inert>
+                        <input type="search" name="q" id="quickSearchInput" placeholder="Tìm tên phim..." aria-label="Tên phim" maxlength="200" autocomplete="off" required>
+                        <button type="submit" aria-label="Tìm phim"><i class="fa-solid fa-magnifying-glass"></i></button>
                         <button type="button" id="quickSearchClose" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
+                        <div class="search-suggestions" id="searchSuggestions" hidden>
+                            <p id="searchStatus" role="status"></p>
+                            <ul id="searchSuggestionList" aria-label="Phim gợi ý"></ul>
+                        </div>
+                    </form>
                 </div>
             </nav>
         </div>

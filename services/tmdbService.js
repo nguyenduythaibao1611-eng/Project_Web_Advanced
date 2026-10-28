@@ -25,20 +25,17 @@ exports.getPopularMovies = async () => {
 /**
  * 2. Tìm kiếm phim theo từ khóa
  */
-exports.searchMovies = async (keyword) => {
-    try {
-        const response = await tmdbApi.get(`/search/movie`, {
-            params: {
-                query: keyword,
-                language: 'vi-VN',
-                page: 1
-            }
-        });
-        return response.data.results;
-    } catch (error) {
-        console.error(`Lỗi tìm kiếm phim "${keyword}":`, error.message);
-        return [];
-    }
+exports.searchMovies = async (keyword, page = 1) => {
+    const response = await tmdbApi.get('/search/movie', {
+        params: {
+            query: keyword,
+            language: 'vi-VN',
+            page,
+            include_adult: false
+        },
+        timeout: 8000
+    });
+    return response.data;
 };
 
 /**
