@@ -45,14 +45,27 @@
                     <button type="button" class="icon-btn search-toggle-btn" id="searchToggleBtn" aria-label="Tìm kiếm" title="Tìm kiếm phim" aria-controls="searchExpandBar" aria-expanded="false">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </button>
-                    <!-- Input tìm kiếm mở rộng -->
+                    <!-- Bảng tìm kiếm nằm dưới header để không che điều hướng -->
                     <form class="search-expand-bar" id="searchExpandBar" action="/search" method="get" role="search" inert>
-                        <input type="search" name="q" id="quickSearchInput" placeholder="Tìm tên phim..." aria-label="Tên phim" maxlength="200" autocomplete="off" required>
-                        <button type="submit" aria-label="Tìm phim"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        <button type="button" id="quickSearchClose" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="search-panel-heading">
+                            <div>
+                                <span class="search-eyebrow">CINEVERSE DISCOVERY</span>
+                                <h2>Hôm nay bạn muốn xem gì?</h2>
+                            </div>
+                            <button type="button" class="search-close" id="quickSearchClose" aria-label="Đóng tìm kiếm" title="Đóng (Esc)"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        </div>
+                        <div class="search-input-row">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input type="search" name="q" id="quickSearchInput" placeholder="Tên phim tiếng Việt hoặc tên gốc..." aria-label="Tên phim" aria-describedby="searchHint" maxlength="200" autocomplete="off" required>
+                            <button type="submit" class="search-submit">Tìm kiếm <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                        </div>
                         <div class="search-suggestions" id="searchSuggestions" hidden>
                             <p id="searchStatus" role="status"></p>
                             <ul id="searchSuggestionList" aria-label="Phim gợi ý"></ul>
+                        </div>
+                        <div class="search-panel-footer" id="searchHint">
+                            <span>Nhập từ 2 ký tự để xem gợi ý phim</span>
+                            <span><kbd>Esc</kbd> để đóng</span>
                         </div>
                     </form>
                 </div>
