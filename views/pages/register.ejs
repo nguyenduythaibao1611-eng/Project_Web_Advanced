@@ -1,0 +1,92 @@
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Đăng Ký Tài Khoản</h1>
+            <p class="auth-subtitle">Tạo tài khoản để cá nhân hóa và quản lý danh sách phim yêu thích</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="auth-alert error">
+                <span class="alert-icon">⚠️</span>
+                <span><%= error %></span>
+            </div>
+        <% } %>
+
+        <form action="/register" method="POST" class="auth-form">
+            <input type="hidden" name="redirect" value="<%= typeof redirect !== 'undefined' ? redirect : '/' %>">
+
+            <div class="form-group">
+                <label for="username" class="form-label">Tên người dùng (Username)</label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="VD: nguyenvana (3-30 ký tự)"
+                        value="<%= typeof formData !== 'undefined' && formData.username ? formData.username : '' %>"
+                        required
+                        minlength="3"
+                        maxlength="30"
+                        autocomplete="username"
+                        autofocus
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">Địa chỉ Email</label>
+                <div class="input-wrapper">
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-input"
+                        placeholder="VD: name@example.com"
+                        value="<%= typeof formData !== 'undefined' && formData.email ? formData.email : '' %>"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Mật khẩu</label>
+                <div class="input-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="Tối thiểu 6 ký tự"
+                        required
+                        minlength="6"
+                        autocomplete="new-password"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword" class="form-label">Xác nhận mật khẩu</label>
+                <div class="input-wrapper">
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        class="form-input"
+                        placeholder="Nhập lại mật khẩu"
+                        required
+                        minlength="6"
+                        autocomplete="new-password"
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="auth-submit-btn">Đăng Ký</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Đã có tài khoản? <a href="/login<%= typeof redirect !== 'undefined' && redirect !== '/' ? '?redirect=' + encodeURIComponent(redirect) : '' %>" class="auth-link">Đăng nhập</a></p>
+        </div>
+    </div>
+</div>

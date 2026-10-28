@@ -1,0 +1,57 @@
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Đăng Nhập</h1>
+            <p class="auth-subtitle">Chào mừng bạn quay trở lại với không gian điện ảnh CineVerse</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="auth-alert error">
+                <span class="alert-icon">⚠️</span>
+                <span><%= error %></span>
+            </div>
+        <% } %>
+
+        <form action="/login" method="POST" class="auth-form">
+            <input type="hidden" name="redirect" value="<%= typeof redirect !== 'undefined' ? redirect : '/' %>">
+
+            <div class="form-group">
+                <label for="usernameOrEmail" class="form-label">Tên đăng nhập hoặc Email</label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="usernameOrEmail"
+                        name="usernameOrEmail"
+                        class="form-input"
+                        placeholder="Nhập username hoặc địa chỉ email"
+                        value="<%= typeof usernameOrEmail !== 'undefined' ? usernameOrEmail : '' %>"
+                        required
+                        autocomplete="username"
+                        autofocus
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Mật khẩu</label>
+                <div class="input-wrapper">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="Nhập mật khẩu của bạn"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="auth-submit-btn">Đăng Nhập</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Chưa có tài khoản? <a href="/register<%= typeof redirect !== 'undefined' && redirect !== '/' ? '?redirect=' + encodeURIComponent(redirect) : '' %>" class="auth-link">Đăng ký ngay</a></p>
+        </div>
+    </div>
+</div>

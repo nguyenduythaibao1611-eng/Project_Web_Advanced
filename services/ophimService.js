@@ -177,3 +177,35 @@ exports.getFirstEpisode = async (slug) => {
 
 // Alias tương thích với yêu cầu gọi searchOphim
 exports.searchOphim = exports.searchMovies;
+
+
+/**
+ * 5. Lấy danh sách phim mới cập nhật theo số trang (hỗ trợ cào dữ liệu)
+ * Endpoint: /danh-sach/phim-moi-cap-nhat?page=...
+ * @param {number} page - Số trang (mặc định: 1)
+ * @returns {Promise<{ items: Array, pagination: Object }>}
+ */
+exports.getLatestMovies = async (page = 1) => {
+    try {
+        const response = await requestWithFallback('/danh-sach/phim-moi-cap-nhat', { page });
+        const data = response.data;
+        const items = data?.items || data?.data?.items || [];
+        const pagination = data?.pagination || data?.data?.params?.pagination || {};
+        return { items, pagination };
+    } catch (error) {
+        // Thử gọi trực tiếp sang phimapi nếu domain chính gặp lỗi
+        try {
+            const res = await axios.get(`https://phimapi.com/danh-sach/phim-moi-cap-nhat?page=${page}`, {
+                timeout: 7000,
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            return {
+                items: res.data?.items || [],
+                pagination: res.data?.pagination || {}
+            };
+        } catch (_err) {
+            console.error(`[OPhim Service] Lỗi lấy danh sách phim mới trang ${page}:`, error.message);
+            return { items: [], pagination: {} };
+        }
+    }
+};

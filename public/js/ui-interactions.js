@@ -92,6 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const DURATION = 8000;
         let current = 0;
         let timer = null;
+        let startTime = Date.now();
+        let remaining = DURATION;
+        let isPaused = false;
 
         const go = (i) => {
             current = (i + slides.length) % slides.length;
@@ -103,22 +106,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     t.classList.add('is-active');
                 }
             });
+            remaining = DURATION;
+            startTime = Date.now();
         };
 
-        const start = () => {
-            stop();
-            if (slides.length > 1) timer = setInterval(() => go(current + 1), DURATION);
+        const scheduleNext = (delay) => {
+            if (timer) clearTimeout(timer);
+            if (slides.length <= 1) return;
+            startTime = Date.now();
+            timer = setTimeout(() => {
+                go(current + 1);
+                scheduleNext(DURATION);
+            }, delay);
         };
-        const stop = () => timer && clearInterval(timer);
+
+        const pause = () => {
+            if (isPaused) return;
+            isPaused = true;
+            if (timer) clearTimeout(timer);
+            const elapsed = Date.now() - startTime;
+            remaining = Math.max(500, remaining - elapsed);
+            hero.classList.add('is-paused');
+        };
+
+        const resume = () => {
+            if (!isPaused) return;
+            isPaused = false;
+            hero.classList.remove('is-paused');
+            scheduleNext(remaining);
+        };
 
         thumbs.forEach((t) => t.addEventListener('click', () => {
+            if (timer) clearTimeout(timer);
+            hero.classList.remove('is-paused');
+            isPaused = false;
             go(Number(t.dataset.index));
-            start();
+            scheduleNext(DURATION);
         }));
 
-        hero.addEventListener('mouseenter', () => { stop(); hero.classList.add('is-paused'); });
-        hero.addEventListener('mouseleave', () => { hero.classList.remove('is-paused'); go(current); start(); });
-        start();
+        hero.addEventListener('mouseenter', pause);
+        hero.addEventListener('mouseleave', resume);
+
+        scheduleNext(DURATION);
     }
 
     // ---------- Hàng phim: nút mũi tên cuộn ngang ----------

@@ -1,1 +1,11 @@
+# Bỏ qua thư mục tài liệu cá nhân
 local-docs/
+My-note.md
+
+# Environment variables - không commit thông tin bí mật
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
