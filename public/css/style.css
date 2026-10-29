@@ -945,6 +945,30 @@ button { font-family: inherit; }
     gap: 18px;
 }
 
+/* Trang danh sách phim */
+.movies-hero { position: relative; overflow: hidden; min-height: 270px; justify-content: center; isolation: isolate; }
+.movies-hero::after { content: ''; position: absolute; z-index: -1; right: -80px; top: -150px; width: 520px; aspect-ratio: 1; border: 1px solid rgba(147, 197, 253, 0.15); border-radius: 50%; box-shadow: 0 0 0 70px rgba(91, 140, 255, 0.025), 0 0 0 140px rgba(91, 140, 255, 0.02); }
+.movies-hero .page-title span { color: #a6c4ff; }
+.movies-hero .page-sub { max-width: 520px; line-height: 1.7; }
+.movies-hero-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; margin-top: 12px; color: #fff; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.movies-hero-link i { color: var(--blue-2); }
+.movies-page { scroll-margin-top: 90px; }
+.movies-section-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; }
+.movies-kicker { color: var(--blue-2); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.16em; }
+.movies-section-head h2 { margin: 5px 0; font-size: clamp(1.4rem, 2vw, 1.8rem); letter-spacing: -0.03em; }
+.movies-section-head p { color: var(--text-2); font-size: 0.85rem; }
+.movies-page-indicator { color: var(--text-3); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; white-space: nowrap; }
+.movies-genres { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 24px; }
+.movies-genre { padding: 9px 15px; border: 1px solid var(--line); border-radius: 999px; color: var(--text-2); background: rgba(255, 255, 255, 0.03); font-size: 0.78rem; font-weight: 600; text-decoration: none; transition: background 0.2s, border-color 0.2s, color 0.2s; }
+.movies-genre:hover { color: #fff; border-color: var(--line-strong); }
+.movies-genre.active { color: #fff; background: var(--blue); border-color: var(--blue); }
+.movies-genre:focus-visible, .movies-page-link:focus-visible, .movies-hero-link:focus-visible, .movies-grid .m-card-link:focus-visible { outline: 2px solid var(--blue-2); outline-offset: 3px; }
+.movies-grid .m-card-fav { opacity: 1; transform: none; }
+.movies-pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px; margin-top: 40px; color: var(--text-2); font-size: 0.83rem; }
+.movies-pagination strong { color: #fff; }
+.movies-page-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid var(--line-strong); border-radius: 10px; color: #fff; text-decoration: none; background: rgba(255, 255, 255, 0.04); }
+.movies-page-link:hover { background: rgba(255, 255, 255, 0.1); }
+
 .alert-error {
     display: flex;
     align-items: center;
@@ -1075,6 +1099,9 @@ button { font-family: inherit; }
     :root { --gutter: 20px; }
     .header-inner { height: 64px; }
     .nav-menu .nav-item { display: none; }
+    .nav-menu .movies-nav-item { display: inline-flex; }
+    .header-left { gap: 16px; }
+    .nav-menu { gap: 12px; }
     .hero, .detail-hero, .page-head { margin-left: 12px; margin-right: 12px; border-radius: var(--r-lg); }
     .hero { height: clamp(480px, 72vh, 620px); }
     .hero-body { bottom: 36px; gap: 14px; }
@@ -1087,7 +1114,18 @@ button { font-family: inherit; }
     .footer-nav { gap: 40px; }
 }
 
+@media (max-width: 700px) {
+    .header-inner { gap: 8px; padding: 0 12px; }
+    .header-left, .header-right, .nav-menu, .auth-nav-group { gap: 8px; }
+    .brand-logo .logo-text { font-size: 1rem; letter-spacing: 0.12em; }
+    .movies-nav-item { font-size: 0.7rem; letter-spacing: 0.04em; }
+    .auth-nav-group a { padding: 8px; font-size: 0.72rem; white-space: nowrap; }
+}
+
 @media (max-width: 520px) {
+    .movies-section-head { align-items: flex-start; }
+    .movies-page-indicator { padding-top: 5px; }
+    .movies-hero { min-height: 240px; padding-top: 40px; padding-bottom: 40px; }
     .brand-logo .logo-text { display: none; }
     .hero-actions { width: 100%; }
     .hero-actions .btn { flex: 1; }

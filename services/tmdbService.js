@@ -9,6 +9,20 @@ const tmdbApi = axios.create({
     }
 });
 
+exports.getMovieList = async (page, genre) => {
+    const response = await tmdbApi.get('/discover/movie', {
+        params: {
+            language: 'vi-VN',
+            sort_by: 'popularity.desc',
+            include_adult: false,
+            page,
+            ...(genre && { with_genres: genre })
+        },
+        timeout: 8000
+    });
+    return response.data;
+};
+
 /**
  * 1. Lấy danh sách phim phổ biến (Trang chủ)
  */

@@ -1,6 +1,42 @@
 const tmdbService = require('../services/tmdbService');
 const ophimService = require('../services/ophimService');
 
+const movieGenres = [
+    { id: '', name: 'Tất cả' },
+    { id: '28', name: 'Hành động' },
+    { id: '12', name: 'Phiêu lưu' },
+    { id: '878', name: 'Viễn tưởng' },
+    { id: '35', name: 'Hài' },
+    { id: '27', name: 'Kinh dị' },
+    { id: '16', name: 'Hoạt hình' },
+    { id: '10749', name: 'Lãng mạn' }
+];
+
+exports.getMovieList = async (req, res) => {
+    const pageValue = req.query.page === undefined ? '1' : req.query.page;
+    const genre = req.query.genre === undefined ? '' : req.query.genre;
+    const data = { title: 'Danh sách Movies | CineVerse', genres: movieGenres, genre: '', page: 1,
+        movies: [], totalPages: 0, error: '' };
+    if (typeof pageValue !== 'string' || !/^[1-9]\d{0,2}$/.test(pageValue) || Number(pageValue) > 500 ||
+        typeof genre !== 'string' || !movieGenres.some(item => item.id === genre)) {
+        data.error = 'Trang hoặc thể loại không hợp lệ.';
+        return res.status(400).render('pages/movies', data);
+    }
+    data.page = Number(pageValue);
+    data.genre = genre;
+    try {
+        const result = await tmdbService.getMovieList(data.page, genre);
+        if (!Array.isArray(result.results) || !Number.isInteger(result.total_pages)) throw new Error('Invalid TMDB response');
+        data.movies = result.results;
+        data.totalPages = Math.min(result.total_pages, 500);
+        return res.render('pages/movies', data);
+    } catch (error) {
+        console.error('Lỗi tải danh sách phim:', error.message);
+        data.error = 'Chưa thể tải danh sách phim. Vui lòng thử lại sau.';
+        return res.status(502).render('pages/movies', data);
+    }
+};
+
 /**
  * 1. Lấy danh sách phim phổ biến cho trang chủ
  */
