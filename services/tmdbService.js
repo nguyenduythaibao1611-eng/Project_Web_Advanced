@@ -9,6 +9,20 @@ const tmdbApi = axios.create({
     }
 });
 
+exports.getMovieList = async (page, genre) => {
+    const response = await tmdbApi.get('/discover/movie', {
+        params: {
+            language: 'vi-VN',
+            sort_by: 'popularity.desc',
+            include_adult: false,
+            page,
+            ...(genre && { with_genres: genre })
+        },
+        timeout: 8000
+    });
+    return response.data;
+};
+
 /**
  * 1. Lấy danh sách phim phổ biến (Trang chủ)
  */
@@ -25,20 +39,17 @@ exports.getPopularMovies = async () => {
 /**
  * 2. Tìm kiếm phim theo từ khóa
  */
-exports.searchMovies = async (keyword) => {
-    try {
-        const response = await tmdbApi.get(`/search/movie`, {
-            params: {
-                query: keyword,
-                language: 'vi-VN',
-                page: 1
-            }
-        });
-        return response.data.results;
-    } catch (error) {
-        console.error(`Lỗi tìm kiếm phim "${keyword}":`, error.message);
-        return [];
-    }
+exports.searchMovies = async (keyword, page = 1) => {
+    const response = await tmdbApi.get('/search/movie', {
+        params: {
+            query: keyword,
+            language: 'vi-VN',
+            page,
+            include_adult: false
+        },
+        timeout: 8000
+    });
+    return response.data;
 };
 
 /**
@@ -89,6 +100,26 @@ exports.getMoviesByGenre = async (genreId, limit = 15) => {
         return (response.data.results || []).slice(0, limit);
     } catch (error) {
         console.error(`Lỗi lấy phim theo thể loại ${genreId}:`, error.message);
+        return [];
+    }
+};
+
+
+/**
+ * 6. Lấy danh sách Top phim thịnh hành trong ngày hôm nay từ TMDB Trending API
+ * Endpoint: /trending/movie/day?language=vi-VN
+ */
+exports.getTrendingDay = async (limit = 10) => {
+    try {
+        const response = await tmdbApi.get('/trending/movie/day', {
+            params: {
+                language: 'vi-VN'
+            },
+            timeout: 8000
+        });
+        return (response.data.results || []).slice(0, limit);
+    } catch (error) {
+        console.error('Lỗi lấy phim thịnh hành TMDB hôm nay:', error.message);
         return [];
     }
 };

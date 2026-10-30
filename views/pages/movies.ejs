@@ -1,0 +1,48 @@
+<section class="page-head movies-hero">
+    <span class="hero-eyebrow"><i class="fa-solid fa-clapperboard" aria-hidden="true"></i> CINEVERSE COLLECTION</span>
+    <h1 class="page-title">Thế giới <span>điện ảnh.</span></h1>
+    <p class="page-sub">Khám phá những bộ phim nổi bật và tìm câu chuyện dành cho bạn.</p>
+    <a class="movies-hero-link" href="#movies-list">Khám phá ngay <i class="fa-solid fa-arrow-down" aria-hidden="true"></i></a>
+</section>
+
+<section class="page-body movies-page" id="movies-list" aria-labelledby="movies-heading">
+    <div class="movies-section-head">
+        <div>
+            <span class="movies-kicker">DÀNH CHO BẠN</span>
+            <h2 id="movies-heading">Khám phá phim</h2>
+            <p>Phim nổi bật, được cập nhật từ TMDB.</p>
+        </div>
+        <% if (!error && totalPages) { %><span class="movies-page-indicator">TRANG <%= page %> / <%= totalPages %></span><% } %>
+    </div>
+    <nav class="movies-genres" aria-label="Lọc phim theo thể loại">
+        <% genres.forEach(item => { %>
+            <a href="/movies<%= item.id ? '?genre=' + item.id : '' %>#movies-list" class="movies-genre <%= genre === item.id ? 'active' : '' %>" <%- genre === item.id ? 'aria-current="true"' : '' %>><%= item.name %></a>
+        <% }); %>
+    </nav>
+    <% if (error) { %>
+        <div class="empty-state" role="alert">
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <h2>Không thể hiển thị phim</h2>
+            <p><%= error %></p>
+            <a href="/movies" class="btn btn-primary">Thử lại</a>
+        </div>
+    <% } else if (movies.length) { %>
+        <div class="card-grid movies-grid">
+            <% movies.forEach(movie => { %><%- include('../partials/movieCard', { movie }) %><% }); %>
+        </div>
+    <% } else { %>
+        <div class="empty-state">
+            <i class="fa-solid fa-film" aria-hidden="true"></i>
+            <h2>Chưa có phim ở trang này</h2>
+            <p>Hãy thử trang khác hoặc chọn một thể loại khác.</p>
+            <a href="/movies" class="btn btn-primary">Xem tất cả phim</a>
+        </div>
+    <% } %>
+    <% if (!error && totalPages > 1) { %>
+        <nav class="movies-pagination" aria-label="Phân trang phim">
+            <% if (page > 1) { %><a class="movies-page-link" rel="prev" href="/movies?page=<%= page - 1 %><%= genre ? '&genre=' + genre : '' %>#movies-list"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Trang trước</a><% } %>
+            <span>Trang <strong><%= page %></strong> / <%= totalPages %></span>
+            <% if (page < totalPages) { %><a class="movies-page-link" rel="next" href="/movies?page=<%= page + 1 %><%= genre ? '&genre=' + genre : '' %>#movies-list">Trang sau <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a><% } %>
+        </nav>
+    <% } %>
+</section>

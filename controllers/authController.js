@@ -16,6 +16,21 @@ const COOKIE_OPTIONS = {
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
 };
 
+const ONBOARDING_GENRES = [
+    { id: 'hanh-dong', name: 'Hành động', emoji: '💥', icon: 'fa-solid fa-gun', desc: 'Kịch tính, đấu súng & nghẹt thở' },
+    { id: 'tinh-cam', name: 'Tình cảm', emoji: '💖', icon: 'fa-solid fa-heart', desc: 'Lãng mạn, sâu lắng & cảm xúc' },
+    { id: 'hoat-hinh', name: 'Hoạt hình', emoji: '🎨', icon: 'fa-solid fa-wand-magic-sparkles', desc: 'Sáng tạo, rực rỡ & anime' },
+    { id: 'vien-tuong', name: 'Viễn tưởng', emoji: '🚀', icon: 'fa-solid fa-rocket', desc: 'Vũ trụ, tương lai & công nghệ' },
+    { id: 'hai-huoc', name: 'Hài hước', emoji: '😂', icon: 'fa-solid fa-face-laugh-beam', desc: 'Vui vẻ, hóm hỉnh & thư giãn' },
+    { id: 'kinh-di', name: 'Kinh dị', emoji: '👻', icon: 'fa-solid fa-ghost', desc: 'Rùng rợn, giật gân & ma mị' },
+    { id: 'phieu-luu', name: 'Phiêu lưu', emoji: '🏹', icon: 'fa-solid fa-compass', desc: 'Khám phá bí ẩn & thám hiểm' },
+    { id: 'bi-an', name: 'Bí ẩn', emoji: '🕵️', icon: 'fa-solid fa-user-secret', desc: 'Trinh thám, phá án & đấu trí' },
+    { id: 'gia-dinh', name: 'Gia đình', emoji: '👨‍👩‍👧‍👦', icon: 'fa-solid fa-people-roof', desc: 'Gắn kết, bài học & ấm áp' },
+    { id: 'toi-pham', name: 'Tội phạm', emoji: '🔍', icon: 'fa-solid fa-handcuffs', desc: 'Hành động hình sự & thế giới ngầm' },
+    { id: 'gia-tuong', name: 'Giả tưởng', emoji: '🧙', icon: 'fa-solid fa-dragon', desc: 'Ma thuật, sử thi & thần thoại' },
+    { id: 'chien-tranh', name: 'Chiến tranh', emoji: '⚔️', icon: 'fa-solid fa-shield-halved', desc: 'Chiến trường hào hùng & lịch sử' }
+];
+
 /**
  * Tạo JWT token cho người dùng
  */
@@ -224,15 +239,26 @@ exports.postRegister = async (req, res) => {
         const token = generateToken(newUser, sessionId);
         res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
+        const onboardingUrl = redirectUrl && redirectUrl !== '/'
+            ? `/onboarding?redirect=${encodeURIComponent(redirectUrl)}`
+            : '/onboarding';
+
         if (isApi) {
             return res.status(201).json({
                 success: true,
                 message: 'Đăng ký tài khoản thành công.',
-                user: { id: newUser._id, username: newUser.username, email: newUser.email }
+                user: {
+                    id: newUser._id,
+                    username: newUser.username,
+                    email: newUser.email,
+                    preferences: newUser.preferences || [],
+                    age: newUser.age ?? null
+                },
+                redirectTo: onboardingUrl
             });
         }
 
-        return res.redirect(redirectUrl);
+        return res.redirect(onboardingUrl);
     } catch (error) {
         if (isApi) {
             return res.status(400).json({ success: false, message: error.message });
@@ -297,7 +323,248 @@ exports.getCurrentUser = (req, res) => {
         user: {
             id: req.user._id,
             username: req.user.username,
-            email: req.user.email
+            email: req.user.email,
+            isVip: Boolean(req.user.isVip),
+            role: req.user.role || 'user',
+            preferences: req.user.preferences || [],
+            age: req.user.age ?? null
         }
     });
 };
+
+/**
+ * 7. Nâng cấp tài khoản VIP
+ * POST /api/auth/upgrade-vip
+ */
+exports.upgradeVip = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                requireAuth: true,
+                message: 'Vui lòng đăng nhập để nâng cấp gói VIP.'
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { isVip: true },
+            { new: true }
+        );
+
+        return res.json({
+            success: true,
+            isVip: true,
+            message: '🎉 Chúc mừng bạn đã nâng cấp thành công gói VIP CineVerse! Thưởng thức phim không giới hạn.',
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                isVip: user.isVip,
+                preferences: user.preferences || [],
+                age: user.age ?? null
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi khi nâng cấp VIP:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi máy chủ khi nâng cấp VIP.'
+        });
+    }
+};
+
+/**
+ * 8. Toggle VIP (cho mục đích demo/kiểm thử)
+ * POST /api/auth/toggle-vip
+ */
+exports.toggleVip = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                requireAuth: true,
+                message: 'Vui lòng đăng nhập.'
+            });
+        }
+
+        const currentStatus = Boolean(req.user.isVip);
+        const user = await User.findByIdAndUpdate(
+            req.user._id,
+            { isVip: !currentStatus },
+            { new: true }
+        );
+
+        return res.json({
+            success: true,
+            isVip: user.isVip,
+            message: user.isVip ? 'Đã kích hoạt VIP.' : 'Đã chuyển về tài khoản Thường.'
+        });
+    } catch (error) {
+        console.error('Lỗi toggle VIP:', error.message);
+        return res.status(500).json({ success: false, message: 'Lỗi server.' });
+    }
+};
+
+/**
+ * 9. Hiển thị trang Onboarding (chọn thể loại phim yêu thích)
+ * GET /onboarding
+ */
+exports.getOnboardingPage = (req, res) => {
+    if (!req.user) {
+        const redirectUrl = sanitizeRedirectUrl(req.originalUrl);
+        return res.redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+    }
+
+    const redirectUrl = sanitizeRedirectUrl(req.query.redirect || '/');
+    res.render('pages/onboarding', {
+        title: 'Khảo Sát Sở Thích - CineVerse',
+        user: req.user,
+        genres: ONBOARDING_GENRES,
+        currentPreferences: req.user.preferences || [],
+        currentAge: req.user.age ?? '',
+        redirect: redirectUrl,
+        error: null
+    });
+};
+
+/**
+ * 10. Xử lý lưu sở thích (preferences) và độ tuổi (age) sau onboarding
+ * POST /onboarding
+ */
+exports.postOnboarding = async (req, res) => {
+    const isApi = req.originalUrl.startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+    if (!req.user) {
+        if (isApi) {
+            return res.status(401).json({
+                success: false,
+                requireAuth: true,
+                message: 'Vui lòng đăng nhập để lưu sở thích phim.'
+            });
+        }
+        return res.redirect('/login?redirect=%2Fonboarding');
+    }
+
+    const redirectUrl = sanitizeRedirectUrl(req.body.redirect || req.query.redirect || '/');
+
+    try {
+        let { preferences, genres, age } = req.body;
+        let selectedPreferences = preferences !== undefined ? preferences : genres;
+
+        if (typeof selectedPreferences === 'string') {
+            try {
+                const parsed = JSON.parse(selectedPreferences);
+                if (Array.isArray(parsed)) {
+                    selectedPreferences = parsed;
+                } else {
+                    selectedPreferences = [selectedPreferences];
+                }
+            } catch (_err) {
+                if (selectedPreferences.includes(',')) {
+                    selectedPreferences = selectedPreferences.split(',').map((g) => g.trim());
+                } else if (selectedPreferences.trim().length > 0) {
+                    selectedPreferences = [selectedPreferences.trim()];
+                } else {
+                    selectedPreferences = [];
+                }
+            }
+        }
+
+        if (!Array.isArray(selectedPreferences)) {
+            selectedPreferences = [];
+        }
+
+        // Chuẩn hóa và làm sạch mảng sở thích
+        selectedPreferences = selectedPreferences
+            .map((item) => (typeof item === 'string' ? item.trim() : ''))
+            .filter((item) => item.length > 0);
+
+        // Loại bỏ trùng lặp nếu có
+        selectedPreferences = [...new Set(selectedPreferences)];
+
+        // Kiểm tra số lượng: 3 - 5 thể loại
+        if (selectedPreferences.length < 3 || selectedPreferences.length > 5) {
+            const errorMsg = 'Vui lòng chọn từ 3 đến 5 thể loại phim yêu thích.';
+            if (isApi) {
+                return res.status(400).json({ success: false, message: errorMsg });
+            }
+            return res.status(400).render('pages/onboarding', {
+                title: 'Khảo Sát Sở Thích - CineVerse',
+                user: req.user,
+                genres: ONBOARDING_GENRES,
+                currentPreferences: selectedPreferences,
+                currentAge: age || req.user.age || '',
+                redirect: redirectUrl,
+                error: errorMsg
+            });
+        }
+
+        const updateData = {
+            preferences: selectedPreferences
+        };
+
+        if (age !== undefined && age !== null && String(age).trim() !== '') {
+            const parsedAge = Number(age);
+            if (Number.isInteger(parsedAge) && parsedAge >= 1 && parsedAge <= 120) {
+                updateData.age = parsedAge;
+            } else {
+                const ageError = 'Độ tuổi không hợp lệ (từ 1 đến 120 tuổi).';
+                if (isApi) {
+                    return res.status(400).json({ success: false, message: ageError });
+                }
+                return res.status(400).render('pages/onboarding', {
+                    title: 'Khảo Sát Sở Thích - CineVerse',
+                    user: req.user,
+                    genres: ONBOARDING_GENRES,
+                    currentPreferences: selectedPreferences,
+                    currentAge: age,
+                    redirect: redirectUrl,
+                    error: ageError
+                });
+            }
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            updateData,
+            { new: true }
+        );
+
+        if (req.user && updatedUser) {
+            req.user.preferences = updatedUser.preferences;
+            if (updatedUser.age !== undefined) {
+                req.user.age = updatedUser.age;
+            }
+        }
+
+        if (isApi) {
+            return res.json({
+                success: true,
+                message: 'Đã lưu sở thích thành công!',
+                preferences: updatedUser ? updatedUser.preferences : selectedPreferences,
+                age: updatedUser ? (updatedUser.age ?? null) : (updateData.age ?? null),
+                redirectTo: redirectUrl
+            });
+        }
+
+        return res.redirect(redirectUrl);
+    } catch (error) {
+        console.error('Lỗi khi lưu preferences onboarding:', error.message);
+        const serverError = 'Đã có lỗi xảy ra khi lưu sở thích. Vui lòng thử lại.';
+        if (isApi) {
+            return res.status(500).json({ success: false, message: serverError });
+        }
+        return res.status(500).render('pages/onboarding', {
+            title: 'Khảo Sát Sở Thích - CineVerse',
+            user: req.user,
+            genres: ONBOARDING_GENRES,
+            currentPreferences: [],
+            currentAge: '',
+            redirect: redirectUrl,
+            error: serverError
+        });
+    }
+};
+
+exports.ONBOARDING_GENRES = ONBOARDING_GENRES;

@@ -1,7 +1,7 @@
 <section class="page-head">
     <span class="hero-eyebrow"><i class="fa-solid fa-bookmark"></i> Thư viện của bạn</span>
-    <h1 class="page-title">My List</h1>
-    <p class="page-sub">Những bộ phim bạn đã lưu để xem bất cứ lúc nào.</p>
+    <h1 class="page-title">My List & Tiếp Tục Xem</h1>
+    <p class="page-sub">Những bộ phim bạn đang xem dở và danh sách phim đã lưu yêu thích.</p>
 </section>
 
 <div class="page-body">
@@ -12,6 +12,49 @@
         </div>
     <% } %>
 
+    <% if (typeof continueWatching !== 'undefined' && continueWatching && continueWatching.length > 0) { %>
+        <!-- Hàng Tiếp tục xem trong Thư viện -->
+        <section class="continue-watching-section" style="margin-bottom: 40px;">
+            <div class="row-head">
+                <h2 class="row-title"><i class="fa-solid fa-clock-rotate-left"></i> Phim đang xem dở</h2>
+            </div>
+            <div class="row-track" style="display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px;">
+                <% continueWatching.forEach(function(item) { 
+                    const progress = (item.duration && item.duration > 0) ? Math.min(100, Math.round((item.currentTime / item.duration) * 100)) : 0;
+                    const minLeft = (item.duration && item.duration > item.currentTime) ? Math.ceil((item.duration - item.currentTime) / 60) : 0;
+                    const poster = item.posterUrl || 'https://placehold.co/342x513/111322/3b82f6?text=CineVerse';
+                %>
+                    <a href="/movies/<%= item.movieId %>#player" class="continue-card" title="<%= item.movieTitle %>">
+                        <div class="continue-thumb-box">
+                            <img src="<%= poster %>" alt="<%= item.movieTitle %>" class="continue-thumb" loading="lazy">
+                            <div class="continue-play-overlay">
+                                <span class="continue-play-icon"><i class="fa-solid fa-play"></i></span>
+                            </div>
+                            <div class="continue-progress-bar">
+                                <div class="continue-progress-fill" style="width: <%= Math.max(5, progress) %>%;"></div>
+                            </div>
+                        </div>
+                        <div class="continue-meta">
+                            <h3 class="continue-title"><%= item.movieTitle %></h3>
+                            <div class="continue-sub">
+                                <span><%= item.episode || 'Tập 1' %></span>
+                                <% if (minLeft > 0) { %>
+                                    <span>Còn <%= minLeft %> phút</span>
+                                <% } else { %>
+                                    <span>Đã xem <%= Math.floor(item.currentTime / 60) %>p</span>
+                                <% } %>
+                            </div>
+                        </div>
+                    </a>
+                <% }); %>
+            </div>
+        </section>
+    <% } %>
+
+    <div class="row-head" style="margin-bottom: 16px;">
+        <h2 class="row-title"><i class="fa-solid fa-heart"></i> Phim đã lưu (My List)</h2>
+    </div>
+
     <% if (movies && movies.length > 0) { %>
         <div class="card-grid" id="favoritesGrid">
             <% movies.forEach(function(movie) { %>
@@ -21,7 +64,7 @@
     <% } else { %>
         <div class="empty-state" id="emptyFavorites">
             <i class="fa-regular fa-bookmark"></i>
-            <h2>Danh sách của bạn đang trống</h2>
+            <h2>Danh sách yêu thích của bạn đang trống</h2>
             <p>Bấm biểu tượng <i class="fa-regular fa-bookmark"></i> trên thẻ phim hoặc nút <strong>+ MY LIST</strong> để lưu phim.</p>
             <a href="/" class="btn btn-primary"><i class="fa-solid fa-compass"></i> Khám phá phim</a>
         </div>

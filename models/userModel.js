@@ -40,10 +40,23 @@ const userSchema = new mongoose.Schema(
         isVip: {
             type: Boolean,
             default: false
-
         },
-        activeSessionId: { type: String, default: null },
-        isBlocked: { type: Boolean, default: false }
+        activeSessionId: {
+            type: String,
+            default: null
+        },
+        isBlocked: {
+            type: Boolean,
+            default: false
+        },
+        preferences: {
+            type: [String],
+            default: []
+        },
+        age: {
+            type: Number,
+            default: null
+        }
     },
     {
         timestamps: true,

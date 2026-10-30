@@ -161,6 +161,21 @@ const movieSchema = new mongoose.Schema(
             default: false,
             index: true // Phân quyền xem Free (5 phút/5 tập đầu) vs VIP trọn vẹn (Nguyên phụ trách)
         },
+        isFeatured: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+        top10Rank: {
+            type: Number,
+            default: null,
+            index: true // 1 -> 10 nếu nằm trong Top 10 thịnh hành TMDB hôm nay
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
         // Mảng server đa nguồn (OPhim m3u8 + VidSrc iframe) chuẩn theo Phase 2
         danh_sach_server: [serverSchema],
         tmdb: {

@@ -1,4 +1,13 @@
+const dns = require('node:dns');
 const mongoose = require('mongoose');
+
+// Tự động dùng Public DNS (Google, Cloudflare) để phân giải bản ghi SRV của MongoDB Atlas
+// Tránh lỗi querySrv ECONNREFUSED phổ biến trên Windows và các router mạng tại VN
+try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (err) {
+    console.warn('Không thể thiết lập DNS tùy chỉnh:', err.message);
+}
 
 const connectDB = async () => {
     try {

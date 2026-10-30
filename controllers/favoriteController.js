@@ -1,4 +1,5 @@
 const Favorite = require('../models/favoriteModel');
+const WatchHistory = require('../models/watchHistoryModel');
 
 /**
  * 1. Render giao diện trang danh sách phim yêu thích của người dùng hiện tại
@@ -7,17 +8,22 @@ const Favorite = require('../models/favoriteModel');
 exports.getFavoritesPage = async (req, res) => {
     try {
         const userId = req.user._id;
-        const favorites = await Favorite.find({ userId }).sort({ createdAt: -1 });
+        const [favorites, continueWatching] = await Promise.all([
+            Favorite.find({ userId }).sort({ createdAt: -1 }),
+            WatchHistory.find({ userId }).sort({ updatedAt: -1 }).limit(12)
+        ]);
 
         res.render('pages/favorites', {
-            title: 'Phim Yêu Thích - CineVerse',
-            movies: favorites
+            title: 'Phim Yêu Thích & Lịch Sử Xem - CineVerse',
+            movies: favorites,
+            continueWatching: continueWatching || []
         });
     } catch (error) {
         console.error('Lỗi khi tải danh sách phim yêu thích:', error.message);
         res.render('pages/favorites', {
             title: 'Phim Yêu Thích - CineVerse',
             movies: [],
+            continueWatching: [],
             error: 'Không thể tải danh sách phim yêu thích vào lúc này.'
         });
     }
