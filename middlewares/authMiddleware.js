@@ -35,11 +35,7 @@ const checkUser = async (req, res, next) => {
         const decoded = jwt.verify(token, getJwtSecret());
         const user = await User.findById(decoded.id).select('-password');
 
-        if (user) {
-            req.user = user;
-            res.locals.user = user;
-        } else {
-            // User đã bị xóa hoặc không còn tồn tại trong DB -> xóa cookie không hợp lệ
+        if (!user) {
             res.clearCookie(COOKIE_NAME, {
                 httpOnly: true,
                 sameSite: 'lax',
@@ -47,7 +43,35 @@ const checkUser = async (req, res, next) => {
             });
             req.user = null;
             res.locals.user = null;
+            return next();
         }
+
+        const currentSessionId = user.activeSessionId;
+        const tokenSessionId = decoded.sessionId;
+
+        const isTokenSessionValid = typeof tokenSessionId === 'string' && tokenSessionId.length > 0;
+        const isDbSessionActive = typeof currentSessionId === 'string' && currentSessionId.length > 0;
+        const isSessionValid = isTokenSessionValid && isDbSessionActive && tokenSessionId === currentSessionId;
+
+        if (!isSessionValid) {
+            res.clearCookie(COOKIE_NAME, {
+                httpOnly: true,
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production'
+            });
+            req.user = null;
+            res.locals.user = null;
+
+            if (isTokenSessionValid && isDbSessionActive && tokenSessionId !== currentSessionId) {
+                req.sessionReplaced = true;
+            }
+
+            return next();
+        }
+
+        req.sessionId = tokenSessionId;
+        req.user = user;
+        res.locals.user = user;
     } catch (_err) {
         // Token hết hạn hoặc không hợp lệ -> xóa cookie
         res.clearCookie(COOKIE_NAME, {
@@ -89,6 +113,17 @@ const requireAuth = (req, res, next) => {
     const isApiRequest = req.originalUrl.startsWith('/api/') ||
                          req.xhr ||
                          (req.headers.accept && req.headers.accept.includes('application/json'));
+
+    if (req.sessionReplaced) {
+        if (isApiRequest) {
+            return res.status(401).json({
+                success: false,
+                code: 'SESSION_REPLACED',
+                message: 'Tài khoản của bạn đã được đăng nhập trên một thiết bị khác.'
+            });
+        }
+        return res.redirect('/login?reason=session_replaced');
+    }
 
     if (isApiRequest) {
         return res.status(401).json({

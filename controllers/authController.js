@@ -1,5 +1,8 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+
+const SESSION_REPLACED_MESSAGE = 'Tài khoản của bạn đã được đăng nhập trên một thiết bị khác. Vui lòng đăng nhập lại.';
 const {
     COOKIE_NAME,
     getJwtSecret,
@@ -16,9 +19,9 @@ const COOKIE_OPTIONS = {
 /**
  * Tạo JWT token cho người dùng
  */
-const generateToken = (user) => {
+const generateToken = (user, sessionId) => {
     return jwt.sign(
-        { id: user._id, username: user.username },
+        { id: user._id, username: user.username, sessionId },
         getJwtSecret(),
         { expiresIn: '7d' }
     );
@@ -34,9 +37,14 @@ exports.getLoginPage = (req, res) => {
     }
 
     const redirectUrl = sanitizeRedirectUrl(req.query.redirect || '/');
+    let errorMessage = null;
+    if (req.query.reason === 'session_replaced') {
+        errorMessage = SESSION_REPLACED_MESSAGE;
+    }
+
     res.render('pages/login', {
         title: 'Đăng Nhập - CineVerse',
-        error: null,
+        error: errorMessage,
         redirect: redirectUrl,
         usernameOrEmail: ''
     });
@@ -102,7 +110,10 @@ exports.postLogin = async (req, res) => {
         }
 
         // Đăng nhập thành công -> Tạo token & gắn HTTP-only cookie
-        const token = generateToken(user);
+        const sessionId = crypto.randomUUID();
+        await User.findByIdAndUpdate(user._id, { activeSessionId: sessionId });
+
+        const token = generateToken(user, sessionId);
         res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
         if (isApi) {
@@ -198,14 +209,16 @@ exports.postRegister = async (req, res) => {
         }
 
         // Tạo người dùng mới
+        const sessionId = crypto.randomUUID();
         const newUser = await User.create({
             username: normalizedUsername,
             email: normalizedEmail,
-            password
+            password,
+            activeSessionId: sessionId
         });
 
         // Tự động đăng nhập sau khi tạo tài khoản thành công
-        const token = generateToken(newUser);
+        const token = generateToken(newUser, sessionId);
         res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
 
         if (isApi) {
@@ -234,7 +247,18 @@ exports.postRegister = async (req, res) => {
  * 5. Xử lý đăng xuất
  * GET/POST /logout
  */
-exports.logout = (req, res) => {
+exports.logout = async (req, res) => {
+    try {
+        if (req.user && req.sessionId) {
+            await User.findOneAndUpdate(
+                { _id: req.user._id, activeSessionId: req.sessionId },
+                { activeSessionId: null }
+            );
+        }
+    } catch (err) {
+        console.error('Lỗi khi xóa session lúc đăng xuất:', err.message);
+    }
+
     res.clearCookie(COOKIE_NAME, {
         httpOnly: true,
         sameSite: 'lax',
@@ -254,6 +278,14 @@ exports.logout = (req, res) => {
  * GET /api/auth/me
  */
 exports.getCurrentUser = (req, res) => {
+    if (req.sessionReplaced) {
+        return res.status(401).json({
+            success: false,
+            code: 'SESSION_REPLACED',
+            message: SESSION_REPLACED_MESSAGE
+        });
+    }
+
     if (!req.user) {
         return res.status(401).json({ success: false, user: null });
     }
