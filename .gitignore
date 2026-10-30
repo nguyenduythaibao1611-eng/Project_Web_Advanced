@@ -9,5 +9,5 @@ My-note.md
 
 # Dependencies
 node_modules/
-
+public/uploads/admin/
 _backup_supabase_admin/

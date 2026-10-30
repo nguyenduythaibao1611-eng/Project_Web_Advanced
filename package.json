@@ -5,6 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "admin:grant": "node scripts/grantAdmin.js",
+    "admin:preview": "node tests/previewAdmin.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",

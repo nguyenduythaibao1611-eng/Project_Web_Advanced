@@ -112,7 +112,7 @@ exports.postLogin = async (req, res) => {
         }
 
         const isMatch = await user.comparePassword(password);
-        if (!isMatch) {
+        if (!isMatch || user.isBlocked) {
             if (isApi) {
                 return res.status(401).json({ success: false, message: invalidCredsMsg });
             }
@@ -126,7 +126,10 @@ exports.postLogin = async (req, res) => {
 
         // Đăng nhập thành công -> Tạo token & gắn HTTP-only cookie
         const sessionId = crypto.randomUUID();
-        await User.findByIdAndUpdate(user._id, { activeSessionId: sessionId });
+        const activeUser = await User.findOneAndUpdate(
+            { _id: user._id, isBlocked: { $ne: true } }, { activeSessionId: sessionId }
+        );
+        if (!activeUser) throw new Error('Account unavailable');
 
         const token = generateToken(user, sessionId);
         res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);

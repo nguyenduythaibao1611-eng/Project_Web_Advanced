@@ -11,6 +11,6 @@ router.use('/', movieRoutes);
 router.use('/', favoriteRoutes);
 router.use('/', authRoutes);
 router.use('/', watchHistoryRoutes);
-router.use('/', adminRoutes);
+router.use('/admin', adminRoutes);
 
 module.exports = router;
