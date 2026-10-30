@@ -103,11 +103,55 @@ const requireAuth = (req, res, next) => {
     return res.redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
 };
 
+/**
+ * Middleware phan quyen Admin (su dung sau requireAuth hoac doc lap)
+ * - Chua dang nhap: giu hanh vi cua requireAuth (chuyen huong /login hoac tra 401 JSON)
+ * - Da dang nhap nhung role !== 'admin': tra ve 403 (JSON cho API, plain-text cho web page)
+ * - Nguoi dung la admin: tiep tuc next()
+ */
+const requireAdmin = (req, res, next) => {
+    if (!req.user) {
+        const isApiRequest = req.originalUrl.startsWith('/api/') ||
+                             req.xhr ||
+                             (req.headers.accept && req.headers.accept.includes('application/json'));
+
+        if (isApiRequest) {
+            return res.status(401).json({
+                success: false,
+                requireAuth: true,
+                message: 'Vui lòng đăng nhập để thực hiện tính năng này.'
+            });
+        }
+
+        const redirectUrl = sanitizeRedirectUrl(req.originalUrl);
+        return res.redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+    }
+
+    if (req.user.role !== 'admin') {
+        const isApiRequest = req.originalUrl.startsWith('/api/') ||
+                             req.xhr ||
+                             (req.headers.accept && req.headers.accept.includes('application/json'));
+
+        if (isApiRequest) {
+            return res.status(403).json({
+                success: false,
+                code: 'FORBIDDEN',
+                message: 'Bạn không có quyền truy cập tài nguyên này.'
+            });
+        }
+
+        return res.status(403).type('text/plain').send('403 Forbidden: Yêu cầu quyền quản trị viên.');
+    }
+
+    next();
+};
+
 module.exports = {
     COOKIE_NAME,
     COOKIE_OPTIONS,
     getJwtSecret,
     checkUser,
     requireAuth,
+    requireAdmin,
     sanitizeRedirectUrl
 };
