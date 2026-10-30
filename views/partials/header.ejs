@@ -92,6 +92,7 @@
                         </div>
                         <hr class="user-dropdown-divider">
                         <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
+                        <% if (user.role === 'admin') { %><a href="/admin" class="user-dropdown-link">Trang quản trị</a><% } %>
                         <a href="/logout" class="user-dropdown-link" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
                     </div>
                 </div>

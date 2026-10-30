@@ -4,7 +4,9 @@
   "description": "npm init -y\r npm install express ejs express-ejs-layouts dotenv cors mongoose axios @google/generative-ai\r npm install -D nodemon",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/*.test.js",
+    "admin:grant": "node scripts/grantAdmin.js",
+    "admin:preview": "node tests/previewAdmin.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",

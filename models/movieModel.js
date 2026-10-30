@@ -56,6 +56,7 @@ const movieSchema = new mongoose.Schema(
             trim: true,
             index: true
         },
+        isPublished: { type: Boolean, default: true, index: true },
         origin_name: {
             type: String,
             trim: true,

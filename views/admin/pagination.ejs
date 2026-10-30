@@ -1,0 +1,9 @@
+<% const current = new URLSearchParams({ q });
+if (typeof role !== 'undefined' && role) current.set('role', role);
+if (typeof state !== 'undefined' && state) current.set('state', state);
+if (typeof type !== 'undefined' && type) current.set('type', type);
+function pageUrl(number) { current.set('page', number); return '?' + current.toString(); } %>
+<nav class="pagination" aria-label="Phân trang">
+    <span><%= total.toLocaleString('vi-VN') %> bản ghi · Trang <%= page %> / <%= Math.max(1, pages) %></span>
+    <div><% if (page > 1) { %><a class="button subtle" href="<%= pageUrl(page-1) %>">← Trang trước</a><% } %><% if (page < pages) { %><a class="button subtle" href="<%= pageUrl(page+1) %>">Trang sau →</a><% } %></div>
+</nav>

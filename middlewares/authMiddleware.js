@@ -35,7 +35,7 @@ const checkUser = async (req, res, next) => {
         const decoded = jwt.verify(token, getJwtSecret());
         const user = await User.findById(decoded.id).select('-password');
 
-        if (!user) {
+        if (!user || user.isBlocked) {
             res.clearCookie(COOKIE_NAME, {
                 httpOnly: true,
                 sameSite: 'lax',

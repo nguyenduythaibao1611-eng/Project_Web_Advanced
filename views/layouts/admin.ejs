@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <script src="/js/admin.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#admin-content">Đi đến nội dung</a>
+    <aside class="sidebar">
+        <a class="brand" href="/admin">CINEVERSE<span>ADMIN WORKSPACE</span></a>
+        <span class="nav-label">QUẢN TRỊ</span>
+        <nav aria-label="Quản trị">
+            <% [['dashboard','/admin','Tổng quan'],['movies','/admin/movies','Quản lý phim'],['users','/admin/users','Người dùng'],['logs','/admin/logs','Nhật ký hoạt động']].forEach(([key,href,label]) => { %>
+                <a href="<%= href %>" <%- section === key ? 'aria-current="page"' : '' %>><span class="nav-dot"></span><%= label %></a>
+            <% }); %>
+        </nav>
+        <div class="sidebar-bottom"><a href="/">← Về CineVerse</a><a href="/library">Kho phim đã xuất bản ↗</a></div>
+    </aside>
+    <div class="workspace">
+        <header class="topbar"><span>Không gian quản trị</span><div class="account"><span class="avatar"><%= user.username.slice(0,1).toUpperCase() %></span><span><strong><%= user.username %></strong><small>Quản trị viên</small></span><% if (typeof isAdminPreview !== 'undefined' && isAdminPreview) { %><span class="badge gold">Bản demo</span><% } else { %><form action="/admin/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="button subtle" type="submit">Đăng xuất</button></form><% } %></div></header>
+        <main id="admin-content">
+            <% if (typeof isAdminPreview !== 'undefined' && isAdminPreview) { %><div class="notice">Bản demo mở trực tiếp, không cần đăng nhập. Mọi thao tác chỉ thay đổi dữ liệu thử trong database riêng.</div><% } %>
+            <% if (notice) { %><div class="notice success" role="status"><%= notice %></div><% } %>
+            <%- body %>
+        </main>
+        <footer class="admin-footer">CineVerse · Chỉ dành cho quản trị viên</footer>
+    </div>
+</body>
+</html>
