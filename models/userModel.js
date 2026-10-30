@@ -40,7 +40,10 @@ const userSchema = new mongoose.Schema(
         isVip: {
             type: Boolean,
             default: false
-
+        },
+        activeSessionId: {
+            type: String,
+            default: null
         }
     },
     {
