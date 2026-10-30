@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema(
         isVip: {
             type: Boolean,
             default: false
+
         }
     },
     {
@@ -47,6 +48,7 @@ const userSchema = new mongoose.Schema(
         toJSON: {
             transform: function (doc, ret) {
                 delete ret.password;
+                delete ret.activeSessionId;
                 delete ret.__v;
                 return ret;
             }
@@ -54,6 +56,7 @@ const userSchema = new mongoose.Schema(
         toObject: {
             transform: function (doc, ret) {
                 delete ret.password;
+                delete ret.activeSessionId;
                 delete ret.__v;
                 return ret;
             }
