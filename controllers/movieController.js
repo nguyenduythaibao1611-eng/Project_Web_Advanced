@@ -1,6 +1,91 @@
 const tmdbService = require('../services/tmdbService');
 const ophimService = require('../services/ophimService');
 
+const movieGenres = [
+    { id: '', name: 'Tất cả' },
+    { id: '28', name: 'Hành động' },
+    { id: '12', name: 'Phiêu lưu' },
+    { id: '878', name: 'Viễn tưởng' },
+    { id: '35', name: 'Hài' },
+    { id: '27', name: 'Kinh dị' },
+    { id: '16', name: 'Hoạt hình' },
+    { id: '10749', name: 'Lãng mạn' }
+];
+
+exports.getMovieList = async (req, res) => {
+    const pageValue = req.query.page === undefined ? '1' : req.query.page;
+    const genre = req.query.genre === undefined ? '' : req.query.genre;
+    const data = { title: 'Danh sách Movies | CineVerse', genres: movieGenres, genre: '', page: 1,
+        movies: [], totalPages: 0, error: '' };
+    if (typeof pageValue !== 'string' || !/^[1-9]\d{0,2}$/.test(pageValue) || Number(pageValue) > 500 ||
+        typeof genre !== 'string' || !movieGenres.some(item => item.id === genre)) {
+        data.error = 'Trang hoặc thể loại không hợp lệ.';
+        return res.status(400).render('pages/movies', data);
+    }
+    data.page = Number(pageValue);
+    data.genre = genre;
+    try {
+        const result = await tmdbService.getMovieList(data.page, genre);
+        if (!Array.isArray(result.results) || !Number.isInteger(result.total_pages)) throw new Error('Invalid TMDB response');
+        data.movies = result.results;
+        data.totalPages = Math.min(result.total_pages, 500);
+        return res.render('pages/movies', data);
+    } catch (error) {
+        console.error('Lỗi tải danh sách phim:', error.message);
+        data.error = 'Chưa thể tải danh sách phim. Vui lòng thử lại sau.';
+        return res.status(502).render('pages/movies', data);
+    }
+};
+
+function readSearch(req) {
+    const query = req.query.q;
+    const page = req.query.page === undefined ? '1' : req.query.page;
+    if ((query !== undefined && typeof query !== 'string') ||
+        (typeof query === 'string' && query.length > 200) ||
+        typeof page !== 'string' || !/^[1-9]\d{0,2}$/.test(page) || Number(page) > 500) {
+        return null;
+    }
+    return { keyword: (query || '').trim(), page: Number(page) };
+}
+
+exports.search = async (req, res) => {
+    const search = readSearch(req);
+    const data = { title: 'Tìm kiếm phim | CineVerse', keyword: search?.keyword || '',
+        movies: [], page: search?.page || 1, totalPages: 0, totalResults: 0, error: '' };
+    if (!search) {
+        data.error = 'Từ khóa tối đa 200 ký tự và số trang từ 1 đến 500.';
+        return res.status(400).render('pages/search', data);
+    }
+    try {
+        if (search.keyword) {
+            const result = await tmdbService.searchMovies(search.keyword, search.page);
+            data.movies = result.results;
+            data.totalPages = Math.min(result.total_pages, 500);
+            data.totalResults = result.total_results;
+        }
+        return res.render('pages/search', data);
+    } catch (error) {
+        console.error('Lỗi tìm kiếm TMDB:', error.message);
+        data.error = 'Chưa thể tải kết quả. Vui lòng thử lại sau.';
+        return res.status(502).render('pages/search', data);
+    }
+};
+
+exports.searchSuggestions = async (req, res) => {
+    const search = readSearch(req);
+    if (!search) return res.status(400).json({ error: 'Từ khóa không hợp lệ.' });
+    if (search.keyword.length < 2) return res.json({ movies: [] });
+    try {
+        const result = await tmdbService.searchMovies(search.keyword);
+        return res.json({ movies: result.results.slice(0, 5).map(movie => ({
+            id: movie.id, title: movie.title, release_date: movie.release_date
+        })) });
+    } catch (error) {
+        console.error('Lỗi gợi ý TMDB:', error.message);
+        return res.status(502).json({ error: 'Không tải được gợi ý. Nhấn Enter để thử tìm kiếm.' });
+    }
+};
+
 /**
  * 1. Lấy danh sách phim phổ biến cho trang chủ
  */
