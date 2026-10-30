@@ -1,0 +1,11 @@
+<div class="page-heading"><div><span class="eyebrow">DASHBOARD</span><h1>Tổng quan hệ thống</h1><p>Dữ liệu trực tiếp từ kho phim và tài khoản CineVerse.</p></div><a class="button primary" href="/admin/movies/new">＋ Thêm phim</a></div>
+<div class="stats">
+    <% [['Người dùng',stats.users,stats.admins + ' quản trị viên'],['Phim nội bộ',stats.movies,stats.published + ' phim đang hiển thị'],['Thành viên VIP',stats.vip,'Trong tổng số tài khoản'],['Lượt lưu yêu thích',stats.favorites,'Số bản ghi yêu thích']].forEach(([label,value,description]) => { %>
+        <article class="stat"><span><%= label %></span><strong><%= value.toLocaleString('vi-VN') %></strong><small><%= description %></small></article>
+    <% }); %>
+</div>
+<div class="notice">Có <strong><%= stats.blocked %></strong> tài khoản đang khóa. Kho phim nội bộ được quản lý tại đây và xuất bản ở <a href="/library">Thư viện phim</a>; các nội dung TMDB trên trang chủ là nguồn riêng.</div>
+<div class="two-columns">
+    <section class="panel"><div class="panel-heading"><h2>Phim mới thêm</h2><a href="/admin/movies">Xem tất cả →</a></div><ul class="activity-list"><% recentMovies.forEach(movie => { %><li><div><a href="/admin/movies/<%= movie._id %>/edit"><%= movie.title %></a><small><%= new Date(movie.createdAt).toLocaleDateString('vi-VN') %></small></div><span class="badge <%= movie.isPublished === false ? '' : 'green' %>"><%= movie.isPublished === false ? 'Đang ẩn' : 'Hiển thị' %></span></li><% }); %><% if (!recentMovies.length) { %><li>Chưa có phim. Hãy thêm phim đầu tiên.</li><% } %></ul></section>
+    <section class="panel"><div class="panel-heading"><h2>Thành viên mới</h2><a href="/admin/users">Xem tất cả →</a></div><ul class="activity-list"><% recentUsers.forEach(member => { %><li><div><strong><%= member.username %></strong><small><%= new Date(member.createdAt).toLocaleDateString('vi-VN') %></small></div><span class="badge"><%= member.role === 'admin' ? 'Admin' : 'Thành viên' %></span></li><% }); %><% if (!recentUsers.length) { %><li>Chưa có người dùng.</li><% } %></ul></section>
+</div>
