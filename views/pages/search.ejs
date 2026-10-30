@@ -1,0 +1,34 @@
+<section class="page-head">
+    <span class="hero-eyebrow">Khám phá kho phim</span>
+    <h1 class="page-title">Tìm kiếm phim</h1>
+    <form class="search-page-form" action="/search" method="get" role="search">
+        <input type="search" name="q" value="<%= keyword %>" aria-label="Tên phim" placeholder="Nhập tên phim tiếng Việt hoặc tên gốc..." maxlength="200" required>
+        <button class="btn btn-primary" type="submit">Tìm kiếm</button>
+    </form>
+    <% if (keyword && !error) { %>
+        <p class="page-sub"><%= totalResults %> kết quả cho “<%= keyword %>”</p>
+    <% } %>
+</section>
+<div class="page-body">
+    <% if (error) { %>
+        <div class="alert-error" role="alert"><p><%= error %></p></div>
+    <% } else if (movies.length) { %>
+        <div class="card-grid">
+            <% movies.forEach(movie => { %>
+                <%- include('../partials/movieCard', { movie }) %>
+            <% }); %>
+        </div>
+    <% } else { %>
+        <div class="empty-state">
+            <h2><%= keyword ? 'Không tìm thấy phim phù hợp' : 'Bạn muốn xem phim gì?' %></h2>
+            <p><%= keyword ? 'Thử tên gốc của phim hoặc một từ khóa ngắn hơn.' : 'Nhập tên phim để bắt đầu tìm kiếm.' %></p>
+        </div>
+    <% } %>
+    <% if (!error && totalPages > 1) { %>
+        <nav class="search-pagination" aria-label="Phân trang kết quả">
+            <% if (page > 1) { %><a class="btn btn-ghost" rel="prev" href="/search?q=<%= encodeURIComponent(keyword) %>&amp;page=<%= page - 1 %>">Trang trước</a><% } %>
+            <span>Trang <%= page %> / <%= totalPages %></span>
+            <% if (page < totalPages) { %><a class="btn btn-ghost" rel="next" href="/search?q=<%= encodeURIComponent(keyword) %>&amp;page=<%= page + 1 %>">Trang sau</a><% } %>
+        </nav>
+    <% } %>
+</div>
