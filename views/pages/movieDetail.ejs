@@ -173,12 +173,62 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Thông báo khi tập không có nguồn ở server hiện tại -->
+            <div id="playerNotice" class="player-notice" style="display: none;" aria-live="polite">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="playerNoticeText">Tập này chưa có nguồn ở server đã chọn.</span>
+            </div>
         </div>
 
         <p class="server-hint">
             <i class="fa-solid fa-circle-info"></i> 
             Server 1 phát luồng HLS mượt mà và hỗ trợ lưu lịch sử. Nếu server quá tải, bấm Server 2 để chuyển sang bản dự phòng.
         </p>
+
+        <% const epList = (typeof episodes !== 'undefined' && Array.isArray(episodes)) ? episodes : []; %>
+        <% const currEpIdx = (typeof currentEpisodeIndex !== 'undefined') ? Number(currentEpisodeIndex) : 0; %>
+        <% if (epList.length > 1) { %>
+            <section class="episodes-section" id="episodesSection" aria-label="Danh sách tập phim">
+                <div class="episodes-head">
+                    <div class="episodes-title-group">
+                        <h3 class="episodes-title"><i class="fa-solid fa-list-ol"></i> Danh sách tập</h3>
+                        <span class="episodes-count-badge"><%= epList.length %> tập</span>
+                    </div>
+                    <% if (epList.length > 50) { %>
+                        <% const totalTabs = Math.ceil(epList.length / 50); %>
+                        <% const activeTabIdx = Math.floor(currEpIdx / 50); %>
+                        <div class="episodes-tabs" id="episodesTabs" role="tablist" aria-label="Phân trang tập phim">
+                            <% for (let t = 0; t < totalTabs; t++) { %>
+                                <% const startEp = t * 50 + 1; %>
+                                <% const endEp = Math.min((t + 1) * 50, epList.length); %>
+                                <button type="button"
+                                        class="episodes-tab-btn <%= t === activeTabIdx ? 'active' : '' %>"
+                                        role="tab"
+                                        aria-selected="<%= t === activeTabIdx ? 'true' : 'false' %>"
+                                        data-tab-index="<%= t %>">
+                                    <%= startEp %> - <%= endEp %>
+                                </button>
+                            <% } %>
+                        </div>
+                    <% } %>
+                </div>
+
+                <%
+                    const startRenderIdx = epList.length > 50 ? Math.floor(currEpIdx / 50) * 50 : 0;
+                    const endRenderIdx = epList.length > 50 ? Math.min(startRenderIdx + 50, epList.length) : epList.length;
+                %>
+                <div class="episodes-grid" id="episodesGrid" role="tabpanel">
+                    <% for (let i = startRenderIdx; i < endRenderIdx; i++) { %>
+                        <button type="button"
+                                class="episode-btn <%= i === currEpIdx ? 'active' : '' %>"
+                                data-index="<%= i %>">
+                            <%= epList[i].name || ('Tập ' + (i + 1)) %>
+                        </button>
+                    <% } %>
+                </div>
+            </section>
+        <% } %>
     </section>
 </div>
 
@@ -195,8 +245,11 @@
     isVipUser: Boolean(userIsVip),
     isMovieVip: Boolean(movie.isVip),
     initialResumeSeconds: Number(resumeSeconds || 0),
-    runtimeSeconds: Number(movie.runtime ? movie.runtime * 60 : 7200)
-}) %>
+    runtimeSeconds: Number(movie.runtime ? movie.runtime * 60 : 7200),
+    currentEpisodeIndex: Number(typeof currentEpisodeIndex !== 'undefined' ? currentEpisodeIndex : 0),
+    historyEpisodeName: (typeof historyEpisodeName !== 'undefined' && historyEpisodeName) ? String(historyEpisodeName) : null,
+    servers: (typeof servers !== 'undefined' && Array.isArray(servers)) ? servers : []
+}).replace(/</g, '\u005cu003c') %>
 </script>
 
 <!-- Module Trình phát Đa Server & Khóa VIP độc lập -->

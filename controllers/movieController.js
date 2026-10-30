@@ -398,10 +398,18 @@ exports.getPopular = async (req, res) => {
  * - Lấy vị trí xem dở từ WatchHistory (nếu đã đăng nhập)
  * - Truyền đầy đủ trạng thái VIP và nguồn phát xuống View
  */
+const sanitizeHttpUrl = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return '';
+};
+
 exports.getMovieDetail = async (req, res) => {
     try {
         const movieId = req.params.id || req.params.movieId;
         let movie = null;
+        let dbMovie = null;
         let vidsrcLink = null;
         let ophimEmbedLink = null;
         let ophimM3u8Link = null;
@@ -416,10 +424,11 @@ exports.getMovieDetail = async (req, res) => {
                 query.slug = movieId;
             }
             try {
-                const dbMovie = await Movie.findOne(query);
+                dbMovie = await Movie.findOne(query);
                 if (dbMovie) {
+                    const numericTmdbId = (dbMovie.tmdb && dbMovie.tmdb.id && !isNaN(Number(dbMovie.tmdb.id))) ? Number(dbMovie.tmdb.id) : null;
                     movie = {
-                        id: dbMovie._id,
+                        id: numericTmdbId || dbMovie._id,
                         title: dbMovie.title,
                         original_title: dbMovie.origin_name || dbMovie.title,
                         overview: dbMovie.overview,
@@ -442,10 +451,10 @@ exports.getMovieDetail = async (req, res) => {
                             if (s.server_data && s.server_data.length > 0) {
                                 for (const ep of s.server_data) {
                                     if (isIframeServer) {
-                                        if (ep.link_embed && !s2Embed) s2Embed = ep.link_embed;
+                                        if (ep.link_embed && !s2Embed) s2Embed = sanitizeHttpUrl(ep.link_embed);
                                     } else {
-                                        if (ep.link_m3u8 && !s1M3u8) s1M3u8 = ep.link_m3u8;
-                                        if (ep.link_embed && !s1Embed) s1Embed = ep.link_embed;
+                                        if (ep.link_m3u8 && !s1M3u8) s1M3u8 = sanitizeHttpUrl(ep.link_m3u8);
+                                        if (ep.link_embed && !s1Embed) s1Embed = sanitizeHttpUrl(ep.link_embed);
                                     }
                                 }
                             }
@@ -496,26 +505,102 @@ exports.getMovieDetail = async (req, res) => {
             }
         }
 
-        const ophimLink = ophimM3u8Link || ophimEmbedLink || null;
+        let ophimLink = ophimM3u8Link || ophimEmbedLink || null;
 
-        // Lấy vị trí xem dở nếu người dùng đã đăng nhập
+        // Chuẩn hóa cấu trúc máy chủ (serversData) từ MongoDB hoặc fallback
+        let serversData = [];
+        if (dbMovie && Array.isArray(dbMovie.danh_sach_server) && dbMovie.danh_sach_server.length > 0) {
+            serversData = dbMovie.danh_sach_server.map((s, sIdx) => ({
+                name: s.server_name ? String(s.server_name).trim() : (`Server ${sIdx + 1}`),
+                type: s.server_type === 'iframe' ? 'iframe' : 'm3u8',
+                episodes: Array.isArray(s.server_data)
+                    ? s.server_data.map((ep, epIdx) => ({
+                          name: ep.name ? String(ep.name).trim() : (`Tập ${epIdx + 1}`),
+                          m3u8: sanitizeHttpUrl(ep.link_m3u8),
+                          embed: sanitizeHttpUrl(ep.link_embed)
+                      }))
+                    : []
+            }));
+        }
+
+        // Nếu chưa có serversData (phim TMDB hoặc không có danh_sach_server), tạo cấu trúc 2 server đơn lẻ
+        if (serversData.length === 0) {
+            serversData = [
+                {
+                    name: 'Server 1 (HLS)',
+                    type: 'm3u8',
+                    episodes: [
+                        {
+                            name: 'Full',
+                            m3u8: sanitizeHttpUrl(ophimM3u8Link),
+                            embed: sanitizeHttpUrl(ophimEmbedLink)
+                        }
+                    ]
+                },
+                {
+                    name: 'Server 2 (Iframe)',
+                    type: 'iframe',
+                    episodes: [
+                        {
+                            name: 'Full',
+                            m3u8: '',
+                            embed: sanitizeHttpUrl(vidsrcLink || ophimEmbedLink)
+                        }
+                    ]
+                }
+            ];
+        }
+
+        const episodesList = serversData[0]?.episodes?.length ? serversData[0].episodes : (serversData[1]?.episodes || []);
+
+        // Lấy vị trí xem dở nếu người dùng đã đăng nhập & xác định tập bắt đầu phát
         let lastWatchedSeconds = 0;
         let lastWatchedDuration = 0;
+        let historyEpisodeName = null;
+        let currentEpisodeIndex = 0;
+
         if (req.user) {
             try {
-                const history = await WatchHistory.findOne({
-                    userId: req.user._id,
-                    movieId: Number(movie.id) || movie.id
-                });
+                const targetNumericId = Number(movie.id) || (dbMovie?.tmdb?.id && Number(dbMovie.tmdb.id));
+                if (targetNumericId && !isNaN(targetNumericId)) {
+                    const history = await WatchHistory.findOne({
+                        userId: req.user._id,
+                        movieId: targetNumericId
+                    });
                 if (history) {
-                    lastWatchedSeconds = history.currentTime || 0;
-                    lastWatchedDuration = history.duration || 0;
+                    historyEpisodeName = history.episode ? String(history.episode).trim() : null;
+                    if (historyEpisodeName) {
+                        const foundIdx = episodesList.findIndex(
+                            (ep) => ep.name.toLowerCase() === historyEpisodeName.toLowerCase()
+                        );
+                        if (foundIdx >= 0) {
+                            currentEpisodeIndex = foundIdx;
+                            lastWatchedSeconds = history.currentTime || 0;
+                            lastWatchedDuration = history.duration || 0;
+                        }
+                    } else {
+                        lastWatchedSeconds = history.currentTime || 0;
+                        lastWatchedDuration = history.duration || 0;
+                    }
+                }
                 }
             } catch (histErr) {
                 console.error('Lỗi lấy tiến độ xem dở:', histErr.message);
             }
         }
 
+        // Cập nhật link phát ban đầu theo đúng tập bắt đầu
+        const s1CurrentEp = serversData[0]?.episodes?.[currentEpisodeIndex];
+        if (s1CurrentEp) {
+            ophimM3u8Link = s1CurrentEp.m3u8 || '';
+            ophimEmbedLink = s1CurrentEp.embed || '';
+        }
+        const s2CurrentEp = serversData[1]?.episodes?.[currentEpisodeIndex];
+        if (s2CurrentEp && s2CurrentEp.embed) {
+            vidsrcLink = s2CurrentEp.embed;
+        }
+
+        ophimLink = ophimM3u8Link || ophimEmbedLink || null;
         const isVip = Boolean(req.user && req.user.isVip);
 
         // Truyền đầy đủ các biến sang file view qua res.render()
@@ -529,7 +614,11 @@ exports.getMovieDetail = async (req, res) => {
             ophimEmbedLink: ophimEmbedLink,
             isVip: isVip,
             lastWatchedSeconds: lastWatchedSeconds,
-            lastWatchedDuration: lastWatchedDuration
+            lastWatchedDuration: lastWatchedDuration,
+            servers: serversData,
+            episodes: episodesList,
+            currentEpisodeIndex: currentEpisodeIndex,
+            historyEpisodeName: historyEpisodeName
         });
     } catch (error) {
         console.error(`Lỗi lấy chi tiết phim ID ${req.params.id}:`, error.message);
