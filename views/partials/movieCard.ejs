@@ -1,14 +1,24 @@
 <%
-    const currentId = movie.movieId || movie.id;
-    const thumb = movie.backdrop_path
-        ? `https://image.tmdb.org/t/p/w780${movie.backdrop_path}`
-        : (movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://placehold.co/780x440/111322/3b82f6?text=CineVerse');
-    const year = movie.release_date ? String(movie.release_date).split('-')[0] : '';
-    const score = movie.vote_average ? Number(movie.vote_average).toFixed(1) : '–';
+    const currentId = movie.movieId || movie._id || movie.id;
+    let thumb = 'https://placehold.co/780x440/111322/3b82f6?text=CineVerse';
+    const rawBackdrop = movie.backdrop_path || movie.backdrop_url;
+    const rawPoster = movie.poster_path || movie.poster_url;
+    if (rawBackdrop) {
+        thumb = rawBackdrop.startsWith('http') ? rawBackdrop : `https://image.tmdb.org/t/p/w780${rawBackdrop}`;
+    } else if (rawPoster) {
+        thumb = rawPoster.startsWith('http') ? rawPoster : `https://image.tmdb.org/t/p/w500${rawPoster}`;
+    }
+    const year = movie.year || (movie.release_date ? String(movie.release_date).split('-')[0] : '');
+    const score = (movie.rating !== undefined && movie.rating !== null && movie.rating !== '')
+        ? Number(movie.rating).toFixed(1)
+        : (movie.vote_average ? Number(movie.vote_average).toFixed(1) : '–');
 %>
 <article class="m-card movie-card-cinematic" data-movie-id="<%= currentId %>">
     <a href="/movies/<%= currentId %>" class="m-card-link" title="<%= movie.title %>">
         <img src="<%= thumb %>" alt="<%= movie.title %>" class="m-card-img" loading="lazy">
+        <% if (movie.isVip) { %>
+            <span class="m-card-vip-tag"><i class="fa-solid fa-crown"></i> VIP</span>
+        <% } %>
         <span class="m-card-shade"></span>
         <span class="m-card-play"><i class="fa-solid fa-play"></i></span>
         <span class="m-card-body">
@@ -24,9 +34,9 @@
             class="favorite-btn m-card-fav"
             data-movie-id="<%= currentId %>"
             data-title="<%= movie.title %>"
-            data-poster="<%= movie.poster_path || '' %>"
-            data-vote="<%= movie.vote_average || 0 %>"
-            data-release="<%= movie.release_date || '' %>"
+            data-poster="<%= movie.poster_path || movie.poster_url || '' %>"
+            data-vote="<%= movie.vote_average || movie.rating || 0 %>"
+            data-release="<%= movie.release_date || (movie.year ? `${movie.year}-01-01` : '') %>"
             data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
             title="Thêm vào danh sách yêu thích"
             aria-label="Yêu thích">

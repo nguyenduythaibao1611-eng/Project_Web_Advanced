@@ -44,6 +44,14 @@ const userSchema = new mongoose.Schema(
         activeSessionId: {
             type: String,
             default: null
+        },
+        preferences: {
+            type: [String],
+            default: []
+        },
+        age: {
+            type: Number,
+            default: null
         }
     },
     {

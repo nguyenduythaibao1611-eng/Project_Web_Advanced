@@ -4,11 +4,13 @@
   "description": "npm init -y\r npm install express ejs express-ejs-layouts dotenv cors mongoose axios @google/generative-ai\r npm install -D nodemon",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/*.test.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",
-    "crawl": "node scripts/crawlMovies.js"
+    "crawl": "node scripts/crawlMovies.js",
+    "crawl:top-rated": "node scripts/crawlTopRatedTMDB.js",
+    "sync:top10": "node scripts/syncTop10TMDB.js"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +28,8 @@
     "express": "^5.3.0",
     "express-ejs-layouts": "^2.5.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.11.1"
+    "mongoose": "^9.11.1",
+    "multer": "^2.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

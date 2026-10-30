@@ -1,0 +1,96 @@
+<div class="onboarding-container">
+    <div class="onboarding-card">
+        <!-- Onboarding Header -->
+        <header class="onboarding-header">
+            <div class="onboarding-badge">
+                <i class="fa-solid fa-sparkles"></i> BƯỚC ĐẦU TIÊN CỦA BẠN
+            </div>
+            <h1 class="onboarding-title">Khảo Sát Sở Thích Điện Ảnh</h1>
+            <p class="onboarding-subtitle">
+                Chọn từ <strong>3 đến 5 thể loại phim</strong> bạn yêu thích nhất để CineVerse cá nhân hóa giao diện và mang đến những gợi ý phim đỉnh cao đúng gu của bạn.
+            </p>
+        </header>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="auth-alert error" style="margin-bottom: 24px;">
+                <span class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                <span><%= error %></span>
+            </div>
+        <% } %>
+
+        <form action="/onboarding" method="POST" id="onboardingForm" class="onboarding-form">
+            <input type="hidden" name="redirect" value="<%= typeof redirect !== 'undefined' ? redirect : '/' %>">
+
+            <!-- Thống kê & Hướng dẫn chọn -->
+            <div class="onboarding-toolbar">
+                <div class="selection-status">
+                    <span class="status-counter-pill">
+                        Đã chọn: <strong id="selectedCounter">0</strong> / 5 thể loại
+                    </span>
+                    <span id="onboardingHint" class="onboarding-hint warning">
+                        <i class="fa-solid fa-circle-info"></i> Hãy chọn ít nhất 3 thể loại để tiếp tục
+                    </span>
+                </div>
+
+                <!-- Ô nhập độ tuổi tùy chọn -->
+                <div class="onboarding-age-box">
+                    <label for="userAge" class="age-label">
+                        <i class="fa-solid fa-user-clock"></i> Độ tuổi của bạn <small>(tùy chọn)</small>:
+                    </label>
+                    <input
+                        type="number"
+                        id="userAge"
+                        name="age"
+                        class="form-input onboarding-age-input"
+                        placeholder="VD: 20"
+                        min="1"
+                        max="120"
+                        value="<%= typeof currentAge !== 'undefined' && currentAge ? currentAge : '' %>"
+                    >
+                </div>
+            </div>
+
+            <!-- Lưới thể loại phim tương tác -->
+            <div class="onboarding-genres-grid" id="genresGrid" role="group" aria-label="Danh sách thể loại phim">
+                <% genres.forEach(function(genre) { 
+                    const isSelected = Array.isArray(currentPreferences) && currentPreferences.includes(genre.name);
+                %>
+                    <label class="onboarding-genre-card <%= isSelected ? 'is-selected' : '' %>" data-genre="<%= genre.name %>">
+                        <input
+                            type="checkbox"
+                            name="preferences"
+                            value="<%= genre.name %>"
+                            class="genre-checkbox sr-only"
+                            <%= isSelected ? 'checked' : '' %>
+                        >
+                        <div class="genre-card-inner">
+                            <div class="genre-card-header">
+                                <span class="genre-emoji" aria-hidden="true"><%= genre.emoji %></span>
+                                <span class="genre-check-indicator" aria-hidden="true">
+                                    <i class="fa-solid fa-check"></i>
+                                </span>
+                            </div>
+                            <div class="genre-card-content">
+                                <h2 class="genre-name"><%= genre.name %></h2>
+                                <p class="genre-description"><%= genre.desc %></p>
+                            </div>
+                        </div>
+                    </label>
+                <% }); %>
+            </div>
+
+            <!-- Nút hành động chính -->
+            <div class="onboarding-footer">
+                <p class="onboarding-footer-note">
+                    Bạn luôn có thể thay đổi lại sở thích bất kỳ lúc nào trong trang tài khoản cá nhân.
+                </p>
+                <button type="submit" id="btnStartDiscover" class="onboarding-submit-btn" disabled>
+                    <span>Bắt đầu khám phá</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/js/onboarding.js"></script>

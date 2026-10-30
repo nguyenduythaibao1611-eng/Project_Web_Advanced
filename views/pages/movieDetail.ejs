@@ -1,9 +1,19 @@
 <%
     const dTitle = movie.title || movie.name;
-    const backdrop = movie.backdrop_path ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}` : '';
-    const dYear = movie.release_date ? movie.release_date.split('-')[0] : '';
+    const backdrop = movie.backdrop_path ? (movie.backdrop_path.startsWith('http') ? movie.backdrop_path : `https://image.tmdb.org/t/p/original${movie.backdrop_path}`) : '';
+    const posterSrc = movie.poster_path ? (movie.poster_path.startsWith('http') ? movie.poster_path : `https://image.tmdb.org/t/p/w500${movie.poster_path}`) : '';
+    const dYear = movie.release_date ? movie.release_date.split('-')[0] : (movie.year || '');
     const hours = movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${String(movie.runtime % 60).padStart(2, '0')}m` : '';
+    const m3u8Source = (typeof ophimM3u8 !== 'undefined' && ophimM3u8) ? ophimM3u8 : '';
+    const embedSource = (typeof ophimEmbed !== 'undefined' && ophimEmbed) ? ophimEmbed : ((typeof ophimEmbedLink !== 'undefined' && ophimEmbedLink) ? ophimEmbedLink : '');
+    const vidsrcSource = (typeof vidsrcLink !== 'undefined' && vidsrcLink) ? vidsrcLink : '';
+    const userIsVip = (typeof isVip !== 'undefined') ? Boolean(isVip) : Boolean(locals.user && locals.user.isVip);
+    const resumeSeconds = (typeof lastWatchedSeconds !== 'undefined') ? Number(lastWatchedSeconds) : 0;
 %>
+
+<!-- Nhúng thư viện HLS.js qua CDN để phát luồng m3u8 chất lượng cao -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
+
 <div class="detail">
     <!-- ============ HERO CHI TIẾT ============ -->
     <section class="detail-hero">
@@ -15,8 +25,8 @@
 
             <div class="detail-main">
                 <div class="detail-poster">
-                    <% if (movie.poster_path) { %>
-                        <img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>" alt="<%= dTitle %>">
+                    <% if (posterSrc) { %>
+                        <img src="<%= posterSrc %>" alt="<%= dTitle %>">
                     <% } else { %>
                         <div class="no-poster"><i class="fa-solid fa-film"></i></div>
                     <% } %>
@@ -34,14 +44,18 @@
                         <% if (hours) { %><span class="meta-sep"></span><span><%= hours %></span><% } %>
                         <% if (movie.vote_average) { %>
                             <span class="meta-sep"></span>
-                            <span class="meta-score"><i class="fa-solid fa-star"></i> <%= movie.vote_average.toFixed(1) %></span>
+                            <span class="meta-score"><i class="fa-solid fa-star"></i> <%= Number(movie.vote_average).toFixed(1) %></span>
+                        <% } %>
+                        <% if (movie.isVip) { %>
+                            <span class="meta-sep"></span>
+                            <span class="badge-vip-pill"><i class="fa-solid fa-crown"></i> PHIM VIP</span>
                         <% } %>
                     </div>
 
                     <% if (movie.genres && movie.genres.length > 0) { %>
                         <div class="genre-tags">
                             <% movie.genres.forEach(function(g) { %>
-                                <span class="genre-pill"><%= g.name %></span>
+                                <span class="genre-pill"><%= g.name || g %></span>
                             <% }); %>
                         </div>
                     <% } %>
@@ -52,7 +66,7 @@
                                 class="btn btn-glass favorite-btn detail-fav-btn"
                                 data-movie-id="<%= movie.id %>"
                                 data-title="<%= dTitle %>"
-                                data-poster="<%= movie.poster_path || '' %>"
+                                data-poster="<%= posterSrc %>"
                                 data-vote="<%= movie.vote_average || 0 %>"
                                 data-release="<%= movie.release_date || '' %>"
                                 data-overview="<%= (movie.overview || '').replace(/"/g, '&quot;') %>"
@@ -74,55 +88,116 @@
         </div>
     </section>
 
-    <!-- ============ TRÌNH PHÁT ============ -->
+    <!-- ============ TRÌNH PHÁT THÔNG MINH (HLS.JS + ĐA SERVER + VIP PAYWALL) ============ -->
     <section class="player-section" id="player">
         <div class="player-head">
-            <h2 class="row-title">Trình phát</h2>
-            <div class="server-buttons">
-                <% if (ophimLink) { %>
-                    <button type="button" class="server-btn active" onclick="switchServer('<%= ophimLink %>', this)">
-                        <i class="fa-solid fa-closed-captioning"></i> Server 1 · Vietsub
-                    </button>
-                <% } %>
-                <button type="button" class="server-btn <%= !ophimLink ? 'active' : '' %>" onclick="switchServer('<%= vidsrcLink %>', this)">
-                    <i class="fa-solid fa-globe"></i> Server 2 · Bản gốc
+            <h2 class="row-title"><i class="fa-solid fa-circle-play"></i> Trình phát thông minh</h2>
+            <div class="server-buttons" id="serverSelector" role="tablist" aria-label="Chọn Server phát">
+                <button type="button" class="server-btn <%= (m3u8Source || embedSource) ? 'active' : '' %>" id="btnServer1" onclick="switchToServer(1)">
+                    <span class="server-indicator <%= (m3u8Source || embedSource) ? 'live' : '' %>"></span>
+                    <i class="fa-solid fa-play"></i> Server 1
+                </button>
+                <button type="button" class="server-btn <%= (!m3u8Source && !embedSource) ? 'active' : '' %>" id="btnServer2" onclick="switchToServer(2)">
+                    <span class="server-indicator <%= (!m3u8Source && !embedSource) ? 'live' : '' %>"></span>
+                    <i class="fa-solid fa-server"></i> Server 2
                 </button>
             </div>
         </div>
 
-        <div class="player-wrapper">
+        <div class="player-wrapper" id="playerWrapper">
+            <!-- Server 1: Native HTML5 Video Player tích hợp HLS.js -->
+            <video
+                id="cineversePlayer"
+                class="stream-player-video"
+                controls
+                playsinline
+                preload="metadata"
+                poster="<%= backdrop || posterSrc %>"
+                style="<%= m3u8Source ? '' : 'display: none;' %>">
+            </video>
+
+            <!-- Server 2 (hoặc Fallback): Iframe Player -->
             <iframe
-                id="mainPlayer"
-                src="<%= ophimLink ? ophimLink : vidsrcLink %>"
+                id="fallbackPlayer"
+                class="stream-player-iframe"
+                src="<%= m3u8Source ? 'about:blank' : (vidsrcSource || embedSource) %>"
                 width="100%"
                 height="100%"
                 frameborder="0"
                 allowfullscreen="true"
-                webkitallowfullscreen="true"                                            
+                webkitallowfullscreen="true"
                 mozallowfullscreen="true"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                style="<%= m3u8Source ? 'display: none;' : '' %>">
             </iframe>
+
+            <!-- VIP Paywall Overlay (Khóa sau 5 phút nếu là tài khoản Free) -->
+            <div id="vipPaywallOverlay" class="vip-paywall-overlay" style="display: none;" aria-live="assertive">
+                <div class="vip-paywall-card">
+                    <div class="vip-badge-glow">
+                        <i class="fa-solid fa-crown"></i> CINEVERSE VIP
+                    </div>
+                    <h3 class="vip-paywall-title">Bạn đã dùng hết 5 phút xem thử</h3>
+                    <p class="vip-paywall-desc">
+                        Nâng cấp tài khoản <strong>VIP</strong> để xem trọn bộ không giới hạn trên cả 2 Server, tận hưởng độ phân giải Full HD / 4K siêu nét và tốc độ tải phim mượt mà nhất!
+                    </p>
+                    <div class="vip-features-grid">
+                        <div class="vip-feature-item"><i class="fa-solid fa-circle-check"></i> Xem trọn bộ phim không giới hạn</div>
+                        <div class="vip-feature-item"><i class="fa-solid fa-circle-check"></i> Server VIP băng thông cao</div>
+                        <div class="vip-feature-item"><i class="fa-solid fa-circle-check"></i> Chất lượng Full HD / 4K</div>
+                        <div class="vip-feature-item"><i class="fa-solid fa-circle-check"></i> Không quảng cáo làm phiền</div>
+                    </div>
+                    <div class="vip-paywall-actions">
+                        <button type="button" id="btnUpgradeVip" class="btn btn-vip-cta">
+                            <i class="fa-solid fa-bolt"></i> NÂNG CẤP VIP NGAY (KÍCH HOẠT NHANH)
+                        </button>
+                        <button type="button" id="btnRewatchStart" class="btn btn-glass">
+                            <i class="fa-solid fa-rotate-left"></i> Xem lại từ đầu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner Tiếp tục xem (Resume Playback) -->
+            <div id="resumeBanner" class="resume-prompt-banner" style="display: none;">
+                <div class="resume-info">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Bạn đã xem đến <strong id="resumeTimeText">00:00</strong>. Tiếp tục xem?</span>
+                </div>
+                <div class="resume-actions">
+                    <button type="button" id="btnResumeYes" class="btn-resume-action btn-resume-confirm">
+                        <i class="fa-solid fa-play"></i> Tiếp tục
+                    </button>
+                    <button type="button" id="btnResumeNo" class="btn-resume-action btn-resume-dismiss">
+                        <i class="fa-solid fa-xmark"></i> Bỏ qua
+                    </button>
+                </div>
+            </div>
         </div>
-        <p class="server-hint"><i class="fa-solid fa-circle-info"></i> Nếu server chậm hoặc lỗi, hãy đổi sang server còn lại.</p>
+
+        <p class="server-hint">
+            <i class="fa-solid fa-circle-info"></i> 
+            Server 1 phát luồng HLS mượt mà và hỗ trợ lưu lịch sử. Nếu server quá tải, bấm Server 2 để chuyển sang bản dự phòng.
+        </p>
     </section>
 </div>
 
-<!-- Script xử lý chuyển Server tức thì phía Client -->
-<script>
-    function switchServer(serverUrl, buttonElement) {
-        var player = document.getElementById('mainPlayer');
-        if (player && serverUrl) {
-            player.src = serverUrl;
-        }
-
-        // Cập nhật trạng thái nút bấm
-        var buttons = document.querySelectorAll('.server-btn');
-        buttons.forEach(function(btn) {
-            btn.classList.remove('active');
-        });
-
-        if (buttonElement) {
-            buttonElement.classList.add('active');
-        }
-    }
+<!-- ============ DỮ LIỆU CẤU HÌNH PLAYER TRUYỀN SANG CLIENT ============ -->
+<script id="playerConfig" type="application/json">
+<%- JSON.stringify({
+    movieId: String(movie.id),
+    movieTitle: dTitle,
+    posterUrl: posterSrc || '',
+    m3u8Url: m3u8Source,
+    embedUrl: embedSource,
+    vidsrcUrl: vidsrcSource,
+    isLoggedIn: Boolean(locals.user),
+    isVipUser: Boolean(userIsVip),
+    isMovieVip: Boolean(movie.isVip),
+    initialResumeSeconds: Number(resumeSeconds || 0),
+    runtimeSeconds: Number(movie.runtime ? movie.runtime * 60 : 7200)
+}) %>
 </script>
+
+<!-- Module Trình phát Đa Server & Khóa VIP độc lập -->
+<script src="/js/playerEngine.js" defer></script>

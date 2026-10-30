@@ -109,7 +109,11 @@
                             <span class="user-role"><%= user.email %></span>
                         </div>
                         <hr class="user-dropdown-divider">
+                        <% if (user.role === 'admin') { %>
+                            <a href="/admin" class="user-dropdown-link" style="color: #60a5fa;"><i class="fa-solid fa-gauge-high"></i> Trang Quản Trị</a>
+                        <% } %>
                         <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
+                        <a href="/onboarding" class="user-dropdown-link"><i class="fa-solid fa-sliders"></i> Sở thích phim</a>
                         <a href="/logout" class="user-dropdown-link" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
                     </div>
                 </div>

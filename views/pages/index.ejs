@@ -6,17 +6,24 @@
         10770: 'TV Movie', 53: 'Giật gân', 10752: 'Chiến tranh', 37: 'Miền Tây'
     };
     const list = Array.isArray(movies) ? movies : [];
-    const heroList = list.slice(0, 5);
+    const heroList = (typeof heroBannerMovies !== 'undefined' && Array.isArray(heroBannerMovies) && heroBannerMovies.length > 0) ? heroBannerMovies : list.slice(0, 5);
     const logos = (typeof heroLogos !== 'undefined' && Array.isArray(heroLogos)) ? heroLogos : [];
 
-    const img = (path, size) => path ? `https://image.tmdb.org/t/p/${size}${path}` : '';
-    const yearOf = (m) => m.release_date ? m.release_date.split('-')[0] : '';
-    const genresOf = (m) => (m.genre_ids || []).slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean).join(' · ');
+    const img = (path, size) => { if (!path) return ""; if (path.startsWith("http://") || path.startsWith("https://")) return path; return `https://image.tmdb.org/t/p/${size}${path}`; };
+    const yearOf = (m) => m.year || (m.release_date ? m.release_date.split('-')[0] : '');
+    const genresOf = (m) => {
+        if (m.genres && Array.isArray(m.genres) && m.genres.length > 0) {
+            return m.genres.slice(0, 3).join(' · ');
+        }
+        return (m.genre_ids || []).slice(0, 3).map((id) => GENRE_MAP[id]).filter(Boolean).join(' · ');
+    };
 
     const suggested = list.slice(5);
-    const topRated = [...list].sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 12);
-    const top10 = list.slice(0, 10);
-    const newest = [...list].sort((a, b) => String(b.release_date || '').localeCompare(String(a.release_date || ''))).slice(0, 12);
+    const topRated = [...list].sort((a, b) => (b.vote_average || b.rating || 0) - (a.vote_average || a.rating || 0)).slice(0, 12);
+    const top10 = (typeof top10Movies !== 'undefined' && Array.isArray(top10Movies) && top10Movies.length > 0)
+        ? top10Movies
+        : list.slice(0, 10);
+    const newest = [...list].sort((a, b) => String(b.release_date || b.year || '').localeCompare(String(a.release_date || a.year || ''))).slice(0, 12);
 %>
 
 <h1 class="sr-only">CineVerse - Xem phim trực tuyến</h1>
@@ -30,7 +37,9 @@
             <div class="hero-shade"></div>
 
             <div class="hero-body">
-                <span class="hero-eyebrow"><i class="fa-solid fa-fire-flame-curved"></i> #<%= i + 1 %> Thịnh hành hôm nay</span>
+                <span class="hero-eyebrow">
+                    <i class="fa-solid fa-fire-flame-curved"></i> #<%= i + 1 %> Thịnh hành hôm nay
+                </span>
 
                 <% if (logos[i]) { %>
                     <img class="hero-logo" src="<%= img(logos[i], 'w500') %>" alt="<%= m.title %>">
@@ -93,6 +102,48 @@
 
 <!-- ============ ROWS ============ -->
 <div class="rows" id="suggestedSection">
+    <% if (typeof continueWatching !== 'undefined' && continueWatching && continueWatching.length > 0) { %>
+    <!-- ============ TIẾP TỤC XEM (CONTINUE WATCHING) ============ -->
+    <section class="row continue-watching-row">
+        <div class="row-head">
+            <h2 class="row-title"><i class="fa-solid fa-clock-rotate-left"></i> Tiếp tục xem</h2>
+            <div class="row-nav">
+                <button type="button" class="row-arrow" data-dir="-1" aria-label="Trước"><i class="fa-solid fa-chevron-left"></i></button>
+                <button type="button" class="row-arrow" data-dir="1" aria-label="Sau"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+        <div class="row-track">
+            <% continueWatching.forEach(function(item) { 
+                const progress = (item.duration && item.duration > 0) ? Math.min(100, Math.round((item.currentTime / item.duration) * 100)) : 0;
+                const minLeft = (item.duration && item.duration > item.currentTime) ? Math.ceil((item.duration - item.currentTime) / 60) : 0;
+                const poster = item.posterUrl || 'https://placehold.co/342x513/111322/3b82f6?text=CineVerse';
+            %>
+                <a href="/movies/<%= item.movieId %>#player" class="continue-card" title="<%= item.movieTitle %>">
+                    <div class="continue-thumb-box">
+                        <img src="<%= poster %>" alt="<%= item.movieTitle %>" class="continue-thumb" loading="lazy">
+                        <div class="continue-play-overlay">
+                            <span class="continue-play-icon"><i class="fa-solid fa-play"></i></span>
+                        </div>
+                        <div class="continue-progress-bar">
+                            <div class="continue-progress-fill" style="width: <%= Math.max(5, progress) %>%;"></div>
+                        </div>
+                    </div>
+                    <div class="continue-meta">
+                        <h3 class="continue-title"><%= item.movieTitle %></h3>
+                        <div class="continue-sub">
+                            <span><%= item.episode || 'Tập 1' %></span>
+                            <% if (minLeft > 0) { %>
+                                <span>Còn <%= minLeft %> phút</span>
+                            <% } else { %>
+                                <span>Đã xem <%= Math.floor(item.currentTime / 60) %>p</span>
+                            <% } %>
+                        </div>
+                    </div>
+                </a>
+            <% }); %>
+        </div>
+    </section>
+    <% } %>
     <% if (suggested.length) { %>
     <section class="row">
         <div class="row-head">
@@ -121,10 +172,10 @@
         </div>
         <div class="row-track">
             <% top10.forEach(function(m, i) { %>
-                <a href="/movies/<%= m.id %>" class="rank-card movie-card-cinematic" title="<%= m.title %>">
+                <a href="/movies/<%= m.movieId || m._id || m.id %>" class="rank-card movie-card-cinematic" title="<%= m.title %>">
                     <span class="rank-num"><%= i + 1 %></span>
                     <div class="rank-poster">
-                        <img src="<%= img(m.poster_path, 'w342') || 'https://placehold.co/342x513/111322/3b82f6?text=CineVerse' %>" alt="<%= m.title %>" loading="lazy">
+                        <img src="<%= img(m.poster_path || m.backdrop_path, 'w342') || 'https://placehold.co/342x513/111322/3b82f6?text=CineVerse' %>" alt="<%= m.title %>" loading="lazy">
                     </div>
                     <span class="card-title sr-only"><%= m.title %></span>
                 </a>

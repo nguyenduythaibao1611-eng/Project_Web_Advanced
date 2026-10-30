@@ -1,6 +1,6 @@
 # 🎬 CINEVERSE — Nền Tảng Trực Tuyến Điện Ảnh Đỉnh Cao (Full Documentation & Technical Manual)
 
-> **CineVerse** là nền tảng streaming phim điện ảnh trực tuyến chuẩn quốc tế (lấy cảm hứng từ Disney+ và Marvel Studios). Dự án được xây dựng theo kiến trúc **MVC-Service**, tích hợp tổng hợp dữ liệu từ nhiều nguồn API (TMDB, OPhim, VidSrc), quản lý người dùng với JWT Cookie, lưu trữ ảnh media trên **Supabase Cloud Storage** và cơ sở dữ liệu phân tán trên **MongoDB Atlas**.
+> **CineVerse** là nền tảng streaming phim điện ảnh trực tuyến chuẩn quốc tế (lấy cảm hứng từ Disney+ và Marvel Studios). Dự án được xây dựng theo kiến trúc **MVC-Service**, tích hợp tổng hợp dữ liệu từ nhiều nguồn API (TMDB, OPhim, VidSrc), quản lý người dùng với JWT Cookie HttpOnly, bảo mật phiên 1 tài khoản/1 thiết bị, lưu trữ ảnh media trên **Supabase Cloud Storage**, cơ sở dữ liệu phân tán trên **MongoDB Atlas**, trình phát luồng **HLS.js**, cơ chế **Freemium VIP Paywall**, **Lịch sử xem dở**, và hệ thống **Admin Dashboard**.
 
 ---
 
@@ -9,21 +9,25 @@
 2. [Bản đồ Cấu trúc Thư mục & Trách nhiệm Code](#2-bản-đồ-cấu-trúc-thư-mục--trách-nhiệm-code)
 3. [Bản Đồ Giao Diện Trực Quan (Screen-to-Code Mapping)](#3-bản-đồ-giao-diện-trực-quan-screen-to-code-mapping)
 4. [Các Phân Hệ Kỹ Thuật Trọng Tâm](#4-các-phân-hệ-kỹ-thuật-trọng-tâm)
-   - [4.1. Hệ thống Streaming Đa Server & Tự động Fallback](#41-hệ-thống-streaming-đa-server--tự-động-fallback)
-   - [4.2. Hệ thống Xác thực & Phân quyền (Auth & Security)](#42-hệ-thống-xác-thực--phân-quyền-auth--security)
-   - [4.3. Hệ thống Danh sách Yêu thích (Favorites & Optimistic UI)](#43-hệ-thống-danh-sách-yêu-thích-favorites--optimistic-ui)
-   - [4.4. Hệ thống Hero Banner & Cơ chế Chống Giật (Anti-Jitter)](#44-hệ-thống-hero-banner--cơ-chế-chống-giật-anti-jitter)
-   - [4.5. Hệ thống Worker Cào Dữ Liệu & Pipeline Đa Nguồn (Crawler & Supabase Storage)](#45-hệ-thống-worker-cào-dữ-liệu--pipeline-đa-nguồn-crawler--supabase-storage)
+   - [4.1. Hệ thống Streaming Đa Server HLS.js & Iframe Fallback](#41-hệ-thống-streaming-đa-server-hlsjs--iframe-fallback)
+   - [4.2. Cơ chế Freemium & Giới hạn 5 phút cho User Free (VIP Paywall)](#42-cơ-chế-freemium--giới-hạn-5-phút-cho-user-free-vip-paywall)
+   - [4.3. Hệ thống Lưu Lịch Sử Xem & Tiếp Tục Xem (Watch History)](#43-hệ-thống-lưu-lịch-sử-xem--tiếp-tục-xem-watch-history)
+   - [4.4. Hệ thống Khảo sát Sở thích & Độ tuổi (Onboarding Profile)](#44-hệ-thống-khảo-sát-sở-thích--độ-tuổi-onboarding-profile)
+   - [4.5. Phân Hệ Quản Trị Hệ Thống Toàn Diện (Admin Dashboard & CRUD)](#45-phân-hệ-quản-trị-hệ-thống-toàn-diện-admin-dashboard--crud)
+   - [4.6. Hệ thống Xác thực, Phân quyền & Giới hạn 1 Thiết Bị](#46-hệ-thống-xác-thực-phân-quyền--giới-hạn-1-thiết-bị)
+   - [4.7. Hệ thống Danh sách Yêu thích (Favorites & Optimistic UI)](#47-hệ-thống-danh-sách-yêu-thích-favorites--optimistic-ui)
+   - [4.8. Hệ thống Hero Banner & Cơ chế Chống Giật (Anti-Jitter)](#48-hệ-thống-hero-banner--cơ-chế-chống-giật-anti-jitter)
+   - [4.9. Hệ thống Worker Cào Dữ Liệu & Pipeline Đa Nguồn (Supabase Storage)](#49-hệ-thống-worker-cào-dữ-liệu--pipeline-đa-nguồn-supabase-storage)
 5. [Cẩm Nang Bắt Bệnh & Khắc Phục Sự Cố (Troubleshooting Matrix)](#5-cẩm-nang-bắt-bệnh--khắc-phục-sự-cố-troubleshooting-matrix)
 6. [Hướng dẫn Cài đặt & Khởi chạy Dự án](#6-hướng-dẫn-cài-đặt--khởi-chạy-dự-án)
-7. [Quy chuẩn Kiểm tra Code (Linting & Code Quality)](#7-quy-chuẩn-kiểm-tra-code-linting--code-quality)
-8. [Phân Công Nhiệm Vụ & Tiến Độ Phát Triển (Project Roadmap)](#8-phân-công-nhiệm-vụ--tiến-độ-phát-triển-project-roadmap)
+7. [Quy chuẩn Kiểm thử Tự động & Linting (Testing & Code Quality)](#7-quy-chuẩn-kiểm-thử-tự-động--linting-testing--code-quality)
+8. [Phân Công Nhiệm Vụ & Bảng Theo Dõi Tiến Độ (Project Roadmap)](#8-phân-công-nhiệm-vụ--bảng-theo-dõi-tiến-độ-project-roadmap)
 
 ---
 
 ## 1. KIẾN TRÚC HỆ THỐNG & LUỒNG DỮ LIỆU (MVC-S)
 
-CineVerse vận hành theo mô hình kiến trúc phân lớp chuẩn:
+CineVerse vận hành theo mô hình phân lớp phân tán:
 **Client (Trình duyệt) ⇄ Routes ⇄ Middlewares ⇄ Controllers ⇄ Services / Models ⇄ Views (EJS Rendering)**
 
 ```
@@ -34,28 +38,32 @@ CineVerse vận hành theo mô hình kiến trúc phân lớp chuẩn:
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
                   │                  APP.JS / ROUTES                       │
-                  │  (routes/movieRoutes, favoriteRoutes, authRoutes)      │
+                  │  (movieRoutes, favoriteRoutes, authRoutes,             │
+                  │   adminRoutes, watchHistoryRoutes)                     │
                   └───────────────────────────┬────────────────────────────┘
                                               │
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
                   │                    MIDDLEWARES                         │
-                  │  - checkUser (giải mã JWT, gán req.user, res.locals)   │
+                  │  - checkUser (giải mã JWT, đối chiếu activeSessionId) │
                   │  - requireAuth (chặn khách, redirect login / 401 JSON) │
+                  │  - requireAdmin (chặn user thường, chỉ cho role admin) │
                   └───────────────────────────┬────────────────────────────┘
                                               │
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
                   │                    CONTROLLERS                         │
-                  │  (movieController, favoriteController, authController) │
+                  │  (movieController, authController, favoriteController, │
+                  │   adminController, watchHistoryController)             │
                   └─────────────┬───────────────────────────┬──────────────┘
                                 │                           │
                  Gọi nghiệp vụ  ▼            Truy vấn DB    ▼
     ┌──────────────────────────────────────┐     ┌────────────────────────┐
     │              SERVICES                │     │         MODELS         │
-    │ - tmdbService: Gọi TheMovieDB API    │     │ - movieModel: Schema DB│
+    │ - tmdbService: Gọi TheMovieDB API    │     │ - movieModel: Schema   │
     │ - ophimService: Dò Vietsub & m3u8    │     │ - userModel: bcrypt    │
     │ - supabaseService: Upload Media CDN  │     │ - favoriteModel: Index │
+    │ - dns/db: Public DNS bypass ISP block│     │ - watchHistoryModel    │
     └──────────────────────────────────────┘     └────────────────────────┘
                                 │                           │
                                 └─────────────┬─────────────┘
@@ -63,8 +71,8 @@ CineVerse vận hành theo mô hình kiến trúc phân lớp chuẩn:
                                               ▼
                   ┌────────────────────────────────────────────────────────┐
                   │                 VIEWS ENGINE (EJS)                     │
-                  │   layouts/main.ejs ➔ pages/*.ejs + partials/*.ejs      │
-                  │   Trả về HTML hoàn chỉnh kèm CSS/JS tĩnh cho Client    │
+                  │   layouts/main.ejs / admin.ejs ➔ pages/*.ejs           │
+                  │   Render HTML kết hợp CSS Design System & Client JS    │
                   └────────────────────────────────────────────────────────┘
 ```
 
@@ -75,67 +83,91 @@ CineVerse vận hành theo mô hình kiến trúc phân lớp chuẩn:
 ```
 cineverse/
 ├── config/
-│   ├── db.js                       # Kết nối CSDL MongoDB Atlas thông qua Mongoose
+│   ├── db.js                       # Kết nối MongoDB Atlas kèm Google/Cloudflare DNS bypass
 │   └── supabase.js                 # Khởi tạo SDK kết nối Supabase Cloud Storage
 │
 ├── controllers/
-│   ├── movieController.js          # Điều phối Trang chủ (Hero Banner, Thể loại) & Trang Chi tiết phim
+│   ├── movieController.js          # Trang chủ, Trang danh sách Movies, Chi tiết phim, Tìm kiếm
+│   ├── authController.js           # Đăng ký, Đăng nhập, Đăng xuất, Session 1 thiết bị, Onboarding, Nâng cấp VIP
 │   ├── favoriteController.js       # Quản lý Danh sách yêu thích (Render page, API CRUD, Toggle)
-│   ├── authController.js           # Xử lý Đăng ký, Đăng nhập, Đăng xuất, Cấp JWT Cookie
+│   ├── adminController.js          # Quản trị Admin: Dashboard thống kê, CRUD Phim, Bật/Tắt quyền VIP
+│   ├── watchHistoryController.js   # API Lưu tọa độ giây, danh sách xem tiếp, xóa lịch sử
 │   └── assistantController.js      # [Khung sườn] Dự phòng cho tính năng Chatbot AI
 │
 ├── middlewares/
-│   └── authMiddleware.js           # Kiểm tra token JWT (checkUser), Bắt buộc đăng nhập (requireAuth), Sanitize URL
+│   ├── authMiddleware.js           # checkUser (Session ID), requireAuth, requireAdmin, sanitizeRedirectUrl
+│   ├── errorHandler.js             # Bắt lỗi toàn cục
+│   └── validateMiddleware.js       # Kiểm tra hợp lệ dữ liệu
 │
 ├── models/
-│   ├── movieModel.js               # Schema Phim chuẩn (Text Index search, đa server m3u8 & iframe, genres AI)
-│   ├── userModel.js                # Schema Người dùng (Username, Email, Password băm bcrypt)
+│   ├── movieModel.js               # Schema Phim chuẩn (Text Index search, đa server m3u8 & iframe, soft delete)
+│   ├── userModel.js                # Schema User (bcrypt, activeSessionId, role, isVip, preferences, age)
 │   ├── favoriteModel.js            # Schema Phim lưu (UserId, MovieId, Title, Poster, Index unique)
+│   ├── watchHistoryModel.js        # Schema Lịch sử xem (UserId, MovieId, currentTime, duration, episode)
 │   └── chatLogModel.js             # [Khung sườn] Dự phòng lưu nhật ký chat AI
 │
 ├── routes/
 │   ├── index.js                    # Tổng hợp toàn bộ các Router con vào 1 đầu mối
-│   ├── movieRoutes.js              # Định tuyến: GET / (Trang chủ), GET /movies/:id (Chi tiết)
-│   ├── favoriteRoutes.js           # Định tuyến: GET /favorites, API /api/favorites/*
-│   ├── authRoutes.js               # Định tuyến: /login, /register, /logout, /api/auth/me
+│   ├── movieRoutes.js              # GET /, /movies, /movies/:id, /search, /api/search
+│   ├── authRoutes.js               # /login, /register, /logout, /onboarding, /api/auth/upgrade-vip
+│   ├── favoriteRoutes.js           # GET /favorites, API /api/favorites/*
+│   ├── adminRoutes.js              # /admin (Dashboard), /admin/users (Cấp VIP), /admin/movies (CRUD Phim)
+│   ├── watchHistoryRoutes.js       # API /api/history (Lưu tọa độ, lấy danh sách xem dở)
 │   └── assistantRoutes.js          # [Khung sườn] Định tuyến cho trợ lý ảo
 │
 ├── scripts/
-│   └── crawlMovies.js              # Worker tự động cào phim từ OPhim, upload ảnh Supabase & ghép VidSrc
+│   ├── crawlMovies.js              # Worker tự động cào phim từ OPhim, upload ảnh Supabase & ghép VidSrc
+│   └── makeAdmin.js                # Công cụ dòng lệnh cấp quyền Admin cho tài khoản bất kỳ
 │
 ├── services/
-│   ├── tmdbService.js              # Gọi TMDB API: Phim hot, thể loại, chi tiết, logo trong suốt (getMovieLogo)
-│   ├── ophimService.js             # Gọi OPhim/PhimAPI: Tìm phim, bóc tách link m3u8, lấy danh sách phân trang
-│   ├── supabaseService.js          # Xử lý upload ảnh tự động lên Supabase Storage (uploadImageFromUrl)
+│   ├── tmdbService.js              # TMDB API: Phim hot, danh mục phim phân trang, search suggestions, logo PNG
+│   ├── ophimService.js             # OPhim API: Tìm phim, bóc tách link m3u8, lấy danh sách phân trang
+│   ├── supabaseService.js          # Upload ảnh tự động lên Supabase Storage CDN (uploadImageFromUrl)
 │   └── geminiService.js            # [Khung sườn] Gọi Gemini AI gợi ý phim
+│
+├── tests/                          # BỘ KIỂM THỬ TỰ ĐỘNG CHUẨN NODE.JS TEST RUNNER (35 TESTS)
+│   ├── admin.test.js               # 11 tests: Phân quyền admin, dashboard, CRUD phim, switch toggle VIP
+│   ├── onboarding.test.js          # 10 tests: Form khảo sát sở thích 3-5 thể loại, độ tuổi, cập nhật user
+│   ├── watchHistoryAndVip.test.js  # 4 tests: HLS Player render, API lưu lịch sử xem, nâng cấp VIP
+│   ├── movies.test.js              # 4 tests: Trang danh sách Movies, lọc thể loại, phân trang
+│   └── search.test.js              # 6 tests: Thanh tìm kiếm, live suggestions dropdown, escape ký tự
 │
 ├── views/                          # TOÀN BỘ GIAO DIỆN (SERVER-SIDE RENDERING EJS)
 │   ├── layouts/
-│   │   └── main.ejs                # Khung HTML bao ngoài: Head, Font, CSS, Header, Main, Footer, Toast, JS
+│   │   ├── main.ejs                # Khung HTML giao diện người xem chính
+│   │   └── admin.ejs               # Khung HTML Bảng điều khiển Quản trị viên
 │   ├── partials/
-│   │   ├── header.ejs              # Thanh điều hướng: Logo, Menu, Tìm kiếm, Chuông, User Profile
-│   │   ├── footer.ejs              # Chân trang thông tin, bản quyền, liên kết xã hội
-│   │   ├── movieCard.ejs           # Component thẻ phim chuẩn điện ảnh (Poster, Nút yêu thích, Điểm, HD)
-│   │   ├── aiModal.ejs             # [Khung sườn] Hộp thoại popup trợ lý AI
-│   │   └── trailerModal.ejs        # [Khung sườn] Popup phát trailer phim
+│   │   ├── header.ejs              # Navbar: Logo, Menu, Khung Search thông minh, Chuông, Avatar
+│   │   ├── footer.ejs              # Chân trang thông tin & liên kết
+│   │   ├── movieCard.ejs           # Component thẻ phim chuẩn điện ảnh
+│   │   ├── aiModal.ejs             # Hộp thoại popup trợ lý AI
+│   │   └── trailerModal.ejs        # Popup phát trailer phim
 │   └── pages/
-│       ├── index.ejs               # TRANG CHỦ: Hero Slider 5 phim thịnh hành, các hàng phim cuộn ngang
-│       ├── movieDetail.ejs         # TRANG CHI TIẾT: Hero chi tiết, Trình phát Video Đa Server, Nút đổi nguồn
-│       ├── favorites.ejs           # TRANG MY LIST: Lưới hiển thị các phim đã lưu hoặc màn hình trống (Empty state)
-│       ├── login.ejs               # TRANG ĐĂNG NHẬP: Form tài khoản/email, mật khẩu, thông báo lỗi
-│       ├── register.ejs            # TRANG ĐĂNG KÝ: Form tạo tài khoản mới với validation
-│       ├── search.ejs              # [Khung sườn] Trang kết quả tìm kiếm mở rộng
-│       └── error.ejs               # [Khung sườn] Trang báo lỗi 404/500
+│       ├── index.ejs               # TRANG CHỦ: Hero Slider, Hàng "Tiếp tục xem", Top 10, Thể loại
+│       ├── movieDetail.ejs         # CHI TIẾT PHIM: Trình phát HLS.js, nút chọn server, popup VIP 5 phút
+│       ├── movies.ejs              # DANH SÁCH PHIM: Duyệt phim theo 8 thể loại, phân trang
+│       ├── search.ejs              # TÌM KIẾM: Kết quả tìm kiếm mở rộng kèm phân trang
+│       ├── favorites.ejs           # MY LIST: Lưới hiển thị các phim đã lưu bookmark
+│       ├── onboarding.ejs          # ONBOARDING: Khảo sát chọn 3-5 thể loại yêu thích & độ tuổi
+│       ├── login.ejs               # ĐĂNG NHẬP: Form tài khoản/email, mật khẩu, báo lỗi
+│       ├── register.ejs            # ĐĂNG KÝ: Tạo tài khoản mới, tự chuyển sang Onboarding
+│       ├── error.ejs               # Báo lỗi 404/500
+│       └── admin/
+│           ├── dashboard.ejs       # BẢNG ĐIỀU KHIỂN: 3 thẻ thống kê (Phim, User, VIP), lối tắt
+│           ├── users/index.ejs     # QUẢN LÝ USER: Danh sách thành viên, Switch Toggle VIP tức thì
+│           └── movies/
+│               ├── index.ejs       # QUẢN LÝ PHIM: Bảng phim, tìm kiếm, phân trang, nút Sửa/Xóa
+│               └── form.ejs        # FORM PHIM: Thêm mới & Chỉnh sửa thông số, link m3u8, iframe
 │
 ├── public/                         # TÀI NGUYÊN TĨNH PHÍA TRÌNH DUYỆT (CLIENT-SIDE)
 │   ├── css/
-│   │   └── style.css               # Hệ thống Design System: Biến CSS, Theme tối, Typography, Slider, Glassmorphism
+│   │   ├── style.css               # Design System Streaming: Theme tối, Glassmorphism, VIP Modal, Player
+│   │   └── admin.css               # Giao diện Bảng điều khiển Quản trị hiện đại
 │   └── js/
-│       ├── ui-interactions.js      # Điều khiển UI: Hero slider tự động/dừng khi hover, cuộn hàng, dropdown
-│       ├── favorite.js             # Xử lý Bookmark: Optimistic UI, gọi API toggle, cập nhật Badge, Toast
-│       ├── chat.js                 # [Khung sườn] Client JS cho AI chat
-│       ├── main.js                 # [Khung sườn] Client JS bổ trợ
-│       └── trailer.js              # [Khung sườn] Client JS mở trailer
+│       ├── ui-interactions.js      # Điều khiển slider, live search suggestions panel
+│       ├── favorite.js             # Xử lý Bookmark với Optimistic UI
+│       ├── onboarding.js           # Chọn chips thể loại (3-5 mục), validate form onboarding
+│       └── admin.js                # Xử lý AJAX toggle VIP, xác nhận xóa phim an toàn
 │
 ├── local-docs/                     # Tài liệu kỹ thuật nội bộ nhóm phát triển
 │   ├── Luong-API.md                # Tài liệu phân tích luồng gọi API
@@ -144,226 +176,108 @@ cineverse/
 ├── .env                            # Chứa biến môi trường bí mật (không commit lên GitHub)
 ├── .env.example                    # File mẫu hướng dẫn khai báo biến môi trường cho thành viên
 ├── eslint.config.mjs               # Cấu hình kiểm tra cú pháp ESLint cho cả Node.js và Client Browser
-├── server.js                       # Điểm khởi chạy ứng dụng (Bootstrap Server, kết nối DB, app.listen)
-├── app.js                          # Cấu hình Express, View engine, Cookie parser, Static folder, Root routes
-└── package.json                    # Khai báo thư viện phụ thuộc và scripts chạy (dev, start, lint, crawl)
+├── server.js                       # Khởi chạy server, kết nối MongoDB Atlas
+├── app.js                          # Cấu hình Express, View engine, Cookie parser, nạp dotenv tự động
+└── package.json                    # Khai báo thư viện và scripts (dev, start, test, lint, crawl)
 ```
 
 ---
 
 ## 3. BẢN ĐỒ GIAO DIỆN TRỰC QUAN (SCREEN-TO-CODE MAPPING)
 
-> **Khi nhìn vào giao diện trang web hoặc chụp ảnh màn hình, đối chiếu với bảng này để biết ngay code nằm ở file nào:**
-
-### 🖥️ Khu vực 1: Thanh Điều Hướng (Site Header / Navbar)
-| Vị trí trên màn hình | Giao diện hiển thị | File View phụ trách | File CSS / JS xử lý | Controller / Dữ liệu |
+| Giao diện / Chức năng | Đường dẫn URL | File View phụ trách | File CSS / JS xử lý | Controller / Middleware |
 | :--- | :--- | :--- | :--- | :--- |
-| **Góc trái Header** | Logo `CINEVERSE` & Nút Menu Mobile | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L5-L12) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.brand-logo`) | Tĩnh |
-| **Menu chính** | Các mục: `HOME`, `TV (SOON)`, `MOVIES`, `MY LIST`, `KIDS (SOON)` | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L14-L42) | [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) (chặn click tab SOON) | `res.locals.user` kiểm tra trạng thái |
-| **Badge số lượng phim** | Viên thuốc màu đỏ/vàng trên mục `MY LIST` (VD: `3`, `99+`) | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L34) (`#favCountBadge`) | [`public/js/favorite.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/favorite.js) (`updateBadge()`) | Lấy từ API `/api/favorites/ids` |
-| **Thanh tìm kiếm** | Icon kính lúp bấm vào bung ra ô nhập tên phim | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L44-L53) (`#quickSearchInput`) | [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) (lọc thẻ phim tức thì) | Lọc DOM Client-side |
-| **Chuông thông báo** | Icon chuông có chấm đỏ, bấm mở danh sách thông báo | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L60-L80) (`#notifBtn`) | [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) (bật tắt dropdown) | Tĩnh |
-| **Góc phải: Chưa login** | 2 nút `Đăng nhập` và `Đăng ký` | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L98-L103) (`.auth-nav-group`) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) | `!user` |
-| **Góc phải: Đã login** | Avatar tròn, bấm xổ menu: Tên user, email, Phim đã lưu, Đăng xuất | [`views/partials/header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs#L83-L97) (`#userAvatarBtn`) | [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) (toggle dropdown) | Middleware `checkUser` truyền `user` |
-
----
-
-### 🖥️ Khu vực 2: Trang Chủ (Homepage - `/`)
-| Vị trí trên màn hình | Giao diện hiển thị | File View phụ trách | File CSS / JS xử lý | Controller / Service |
-| :--- | :--- | :--- | :--- | :--- |
-| **Banner Hero Slider** | Khung phim lớn: Ảnh nền 4K zoom chậm, Title Logo PNG hoặc tiêu đề chữ, mô tả, nút `PLAY`, nút `+ MY LIST` | [`views/pages/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/index.ejs#L24-L83) (`.hero`) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.hero-slide`, `.hero-bg`) & [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) | [`controllers/movieController.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/controllers/movieController.js) + [`services/tmdbService.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/services/tmdbService.js) (`getMovieLogo`) |
-| **Thumbnail chọn slide** | 5 ô ảnh nhỏ góc phải dưới banner kèm thanh tiến trình chạy 8 giây | [`views/pages/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/index.ejs#L73-L81) (`.hero-thumbs`) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.hero-thumb-bar` animation `fill`) | `ui-interactions.js` đếm thời gian `pause/resume` |
-| **Hàng phim Đề xuất** | Băng chuyền cuộn ngang các phim thịnh hành kèm 2 nút mũi tên trái/phải | [`views/pages/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/index.ejs#L96-L111) (`.row`) | [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) (`track.scrollBy()`) | `tmdbService.getPopularMovies()` |
-| **Hàng phim Top 10** | Dãy số xếp hạng 1-10 kích thước lớn phía sau poster dọc | [`views/pages/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/index.ejs#L113-L134) (`.rank-card`) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.rank-num`) | Cắt 10 phim đầu từ danh sách |
-| **Các hàng Thể loại** | Hàng Hành Động, Viễn Tưởng, Kinh Dị, Hoạt Hình, Lãng Mạn | [`views/pages/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/index.ejs#L170-L190) | [`views/partials/movieCard.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/movieCard.ejs) | `tmdbService.getMoviesByGenre(id)` |
-| **Thẻ phim đơn lẻ** | Ảnh bìa, bóng đen mờ, nút Play tròn, tên phim, điểm IMDb, icon Bookmark | [`views/partials/movieCard.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/movieCard.ejs) (`.m-card`) | [`public/js/favorite.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/favorite.js) (bắt click `.favorite-btn`) | Dữ liệu từng object `movie` |
-
----
-
-### 🖥️ Khu vực 3: Trang Chi Tiết Phim (Movie Detail - `/movies/:id`)
-| Vị trí trên màn hình | Giao diện hiển thị | File View phụ trách | File CSS / JS xử lý | Controller / Service |
-| :--- | :--- | :--- | :--- | :--- |
-| **Hero chi tiết** | Ảnh nền mờ rộng toàn màn hình, Poster dọc, Nút `< Quay lại` | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs#L8-L23) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.detail-hero`) | [`controllers/movieController.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/controllers/movieController.js) (`getMovieDetail`) |
-| **Thông tin chi tiết** | Tên gốc, Tên tiếng Việt, Năm, Thời lượng (h m), Điểm ⭐, Tags thể loại, Mô tả nội dung | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs#L25-L73) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.genre-pill`) | `tmdbService.getMovieDetail(movieId)` |
-| **Bộ nút hành động** | Nút `XEM NGAY` (cuộn xuống player), Nút `+ MY LIST`, Nút `Trailer (SOON)` | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs#L49-L67) | [`public/js/favorite.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/favorite.js) | Gắn sẵn metadata vào data-attributes |
-| **Bảng chọn Server** | Nút `Server 1 · Vietsub` và nút `Server 2 · Bản gốc` | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs#L81-L90) | Inline script `switchServer(url, btn)` trong `movieDetail.ejs` | Controller tính toán `ophimLink` & `vidsrcLink` |
-| **Trình phát Video Player** | Thẻ `<iframe>` phát phim tỉ lệ chuẩn 16:9 | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs#L93-L105) (`#mainPlayer`) | Thuộc tính allowfullscreen, autoplay | Tự động ưu tiên link Vietsub nếu tìm thấy |
-
----
-
-### 🖥️ Khu vực 4: Trang Danh Sách Yêu Thích (My List - `/favorites`)
-| Vị trí trên màn hình | Giao diện hiển thị | File View phụ trách | File CSS / JS xử lý | Controller / Service |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tiêu đề trang** | Icon bookmark, Tiêu đề "My List" và câu giới thiệu | [`views/pages/favorites.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/favorites.ejs#L1-L5) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.page-head`) | Tĩnh |
-| **Lưới phim đã lưu** | Hiển thị tất cả thẻ phim người dùng đã bookmark | [`views/pages/favorites.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/favorites.ejs#L15-L20) (`#favoritesGrid`) | [`public/js/favorite.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/favorite.js) (bỏ bookmark -> tự animate xoá thẻ) | [`controllers/favoriteController.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/controllers/favoriteController.js) (`Favorite.find({ userId })`) |
-| **Màn hình danh sách trống** | Icon rỗng + Thông báo "Danh sách của bạn đang trống" + Nút "Khám phá phim" | [`views/pages/favorites.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/favorites.ejs#L21-L28) (`#emptyFavorites`) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.empty-state`) | Tự động hiện khi `movies.length === 0` |
-
----
-
-### 🖥️ Khu vực 5: Trang Đăng Nhập & Đăng Ký (`/login` & `/register`)
-| Vị trí trên màn hình | Giao diện hiển thị | File View phụ trách | File CSS / JS xử lý | Controller / Middleware |
-| :--- | :--- | :--- | :--- | :--- |
-| **Hộp đăng nhập (Card)** | Khung nền kính tối, ô Username/Email, Mật khẩu, Nút "Đăng Nhập" | [`views/pages/login.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/login.ejs) (`.auth-card`) | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) (`.auth-container`) | [`controllers/authController.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/controllers/authController.js) (`postLogin`) |
-| **Thông báo lỗi form** | Khung màu đỏ cam chứa icon ⚠️ và thông báo lỗi nhập liệu | `login.ejs` (#L8) & `register.ejs` (#L8) | [`.auth-alert.error`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) | Render biến `error` truyền từ controller |
-| **Tham số chuyển hướng** | Input ẩn `<input type="hidden" name="redirect">` | `login.ejs` (#L16) & `register.ejs` (#L16) | Ghi nhớ trang người dùng vừa đứng trước khi bị bắt login | Helper `sanitizeRedirectUrl` chống lỗi bảo mật |
+| **Trang chủ & Tiếp tục xem** | `/` | [`views/pages/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/index.ejs) | [`style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) / [`ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) | [`movieController.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/controllers/movieController.js) + [`watchHistoryModel.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/models/watchHistoryModel.js) |
+| **Danh mục Phim** | `/movies` | [`views/pages/movies.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movies.ejs) | `style.css` (`.movies-hero`, `.movies-genre`) | `movieController.getMovieList` |
+| **Khung Tìm kiếm & Suggestions** | Header & `/search` | [`views/pages/search.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/search.ejs) | [`header.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/partials/header.ejs) + `ui-interactions.js` | `movieController.search` & `searchSuggestions` |
+| **Player HLS & Popup VIP 5 phút** | `/movies/:id` | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs) | `style.css` (`.vip-paywall-modal`, `#hlsPlayer`) | `movieController.getMovieDetail` |
+| **Màn hình Onboarding** | `/onboarding` | [`views/pages/onboarding.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/onboarding.ejs) | `style.css` + [`onboarding.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/onboarding.js) | `authController.getOnboardingPage` + `postOnboarding` |
+| **Dashboard Quản trị** | `/admin` | [`views/pages/admin/dashboard.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/admin/dashboard.ejs) | [`admin.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/admin.css) + [`admin.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/layouts/admin.ejs) | `adminController.getDashboard` (`requireAdmin`) |
+| **Quản lý User & Cấp VIP** | `/admin/users` | [`views/pages/admin/users/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/admin/users/index.ejs) | `admin.css` + [`admin.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/admin.js) | `adminController.getUsers` + `toggleUserVip` |
+| **Quản lý Phim CRUD** | `/admin/movies` | [`views/pages/admin/movies/index.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/admin/movies/index.ejs) & `form.ejs` | `admin.css` + `admin.js` | `adminController` (`create`, `edit`, `delete`) |
+| **Danh sách Yêu thích** | `/favorites` | [`views/pages/favorites.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/favorites.ejs) | [`favorite.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/favorite.js) | `favoriteController` (`requireAuth`) |
 
 ---
 
 ## 4. CÁC PHÂN HỆ KỸ THUẬT TRỌNG TÂM
 
-### 4.1. Hệ thống Streaming Đa Server & Tự động Fallback
-Hệ thống giải quyết bài toán: **TMDB có thông tin và ảnh chất lượng cao nhưng không có video full; OPhim có Vietsub nhưng không dùng chung ID với TMDB.**
+### 4.1. Hệ thống Streaming Đa Server HLS.js & Iframe Fallback
+- **Trình phát HLS.js:** Nhúng thư viện `hls.js` qua CDN. Trình duyệt tự động gắn thẻ `<video id="hlsPlayer">` để phát mượt mà link stream `.m3u8` chất lượng cao với buffer thích ứng (Adaptive Bitrate).
+- **Chuyển đổi Server không tải lại trang:**
+  - **Server 1 · OPhim VIP (HLS):** Ưu tiên phát link m3u8 bản quyền cao cấp.
+  - **Server 2 · Bản gốc (VidSrc Iframe):** Tự động chuyển đổi sang iframe khi người xem bấm nút hoặc khi nguồn m3u8 có sự cố.
 
-```
-[Khách bấm xem phim]
-        │
-        ▼
-Lấy ID TMDB ───➔ Gọi TMDB lấy chi tiết: movie.original_title & movie.title
-        │
-        ├─────────────────────────────────────────┐
-        │                                         │
-        ▼                                         ▼
-Tạo link dự phòng VidSrc (Server 2):      Tìm kiếm Vietsub trên OPhim (Server 1):
-https://vidsrc.me/embed/movie?tmdb={id}   1. Tìm theo original_title (VD: "Deadpool")
-                                          2. Nếu không thấy ➔ Tìm theo movie.title
-                                          3. Lấy slug ➔ Trích xuất link_embed tập 1
-        │                                         │
-        └────────────────────┬────────────────────┘
-                             │
-                             ▼
-              Đóng gói truyền sang View:
-       - ophimLink: Link Vietsub (hoặc null nếu không tìm thấy)
-       - vidsrcLink: Link bản gốc tiếng Anh (dự phòng luôn chạy)
-                             │
-                             ▼
-      Giao diện phát: iframe ưu tiên ophimLink ➔ Nếu null thì tự phát vidsrcLink
-```
+### 4.2. Cơ chế Freemium & Giới hạn 5 phút cho User Free (VIP Paywall)
+- **Kiểm tra quyền hạn:** Trình phát kiểm tra cờ `user.isVip` được nạp từ database.
+- **Tự động ngắt phát sau 5 phút:**
+  - Đối với tài khoản chưa nâng cấp VIP (`isVip: false`), trình phát lắng nghe sự kiện `timeupdate`. Khi `video.currentTime >= 300` giây (5 phút), video sẽ tự động tạm dừng (`pause()`).
+  - Chặn người dùng tua thanh tiến trình qua mốc 300s.
+  - Hiển thị **Popup VIP Paywall** với lời mời nâng cấp và nút bấm kích hoạt gói VIP tức thì qua API `POST /api/auth/upgrade-vip`.
 
-- **Đổi nguồn không cần tải lại trang:** Hàm `switchServer(url, btn)` trong [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs#L112) gán trực tiếp URL mới vào `iframe.src`, giúp người dùng đổi nguồn phim tức thì trong 0.1 giây.
+### 4.3. Hệ thống Lưu Lịch Sử Xem & Tiếp Tục Xem (Watch History)
+- **Tự động đồng bộ tiến độ:** Cứ mỗi 10 giây khi đang xem, hoặc khi nhấn tạm dừng/rời trang, trình duyệt tự động gửi tiến độ xem về server qua API `POST /api/history` (`movieId`, `currentTime`, `duration`, `episode`).
+- **Tự động tua tiếp (Auto-Resume):** Khi người xem mở lại phim cũ, player đọc lịch sử và tự động tua tiếp tới vị trí giây đã xem dở.
+- **Hàng "Tiếp tục xem" (Continue Watching):** Trang chủ tự động hiển thị hàng phim người dùng đang xem dở kèm thanh tiến độ phần trăm (`progress bar`) trực quan.
 
----
+### 4.4. Hệ thống Khảo sát Sở thích & Độ tuổi (Onboarding Profile)
+- **Luồng kích hoạt:** Ngay sau khi người dùng đăng ký tài khoản thành công, hệ thống tự động điều hướng sang trang `/onboarding`.
+- **Ràng buộc dữ liệu:** Người dùng bắt buộc chọn từ **3 đến 5 thể loại phim yêu thích** (chips selection) và điền độ tuổi hợp lệ (6 - 120 tuổi). Dữ liệu này được lưu vào trường `preferences` và `age` trong [`models/userModel.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/models/userModel.js) làm dữ liệu nền tảng cho thuật toán AI gợi ý.
 
-### 4.2. Hệ thống Xác thực & Phân quyền (Auth & Security)
-- **Mật khẩu an toàn:** Được tự động băm (hash) bằng thư viện `bcryptjs` với độ muối (salt) 10 thông qua hook `pre('save')` trong [`models/userModel.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/models/userModel.js#L56). Khi xuất dữ liệu ra JSON, trường `password` tự động bị ẩn.
-- **Phiên đăng nhập JWT + Cookie HttpOnly:**
-  - Sau khi đăng nhập thành công, máy chủ tạo chuỗi JWT chứa `{ id, username }` có hạn 7 ngày.
-  - Gắn vào cookie mang tên `cineverse_token` với cờ `httpOnly: true` (ngăn chặn đánh cắp token qua mã độc XSS phía Client) và `sameSite: 'lax'`.
-- **Middleware phân quyền thông minh:**
-  - [`checkUser`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/middlewares/authMiddleware.js#L25): Chạy cho **tất cả** các request. Nếu có cookie hợp lệ, nạp user vào `req.user` và `res.locals.user` để Header/Footer tự biết là khách hay đã đăng nhập.
-  - [`requireAuth`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/middlewares/authMiddleware.js#L83): Chặn các trang hoặc API nhạy cảm (`/favorites`, `/api/favorites/*`). Nếu là gọi API (AJAX/Fetch) thì trả về mã `401 JSON`. Nếu là duyệt web thì tự chuyển hướng sang `/login?redirect=...`.
-- **Chống lỗi Open-Redirect:** Hàm `sanitizeRedirectUrl` chỉ chấp nhận URL nội bộ bắt đầu bằng dấu `/`, loại bỏ các URL độc hại trỏ ra ngoài tên miền.
+### 4.5. Phân Hệ Quản Trị Hệ Thống Toàn Diện (Admin Dashboard & CRUD)
+- **Bảo mật tuyệt đối:** Toàn bộ route `/admin/*` được bảo vệ bởi middleware kép `requireAuth` + `requireAdmin`. Tài khoản không có `role: 'admin'` sẽ bị chặn với mã lỗi `403 Forbidden`.
+- **Thống kê thời gian thực:** Dashboard `/admin` hiển thị 3 chỉ số then chốt: Tổng số phim, Tổng số thành viên, và Tổng số tài khoản VIP.
+- **Bật/Tắt VIP theo thời gian thực:** Trang `/admin/users` cung cấp nút gạt **Switch Toggle VIP** gửi API `POST /admin/users/:id/toggle-vip`, cập nhật trạng thái người dùng trong DB tức thì mà không cần F5 trang.
+- **Quản lý phim CRUD:** Bảng danh sách phim `/admin/movies` hỗ trợ tìm kiếm, phân trang; Form thêm mới `/admin/movies/create`; Form chỉnh sửa `/admin/movies/:id/edit`; và cơ chế xóa an toàn (Soft Delete `isDeleted: true`).
+- **Kịch bản cấp quyền Admin nhanh:**
+  ```bash
+  node scripts/makeAdmin.js <username>
+  ```
 
----
+### 4.6. Hệ thống Xác thực, Phân quyền & Giới hạn 1 Thiết Bị
+- **Mật khẩu an toàn:** Băm bằng `bcryptjs` với salt 10, tự động ẩn khi xuất JSON.
+- **Token JWT HttpOnly:** Lưu trữ trong cookie `cineverse_token` với cờ `httpOnly: true` và `sameSite: 'lax'`.
+- **Giới hạn 1 thiết bị/1 tài khoản:** Khi đăng nhập/đăng ký, hệ thống sinh ngẫu nhiên `sessionId = crypto.randomUUID()` lưu vào `User.activeSessionId` và nhúng vào JWT. Nếu tài khoản đăng nhập trên máy mới, `activeSessionId` bị thay thế khiến máy cũ bị đá phiên đăng nhập ngay lập tức (`SESSION_REPLACED`).
 
-### 4.3. Hệ thống Danh sách Yêu thích (Favorites & Optimistic UI)
-- **Cơ sở dữ liệu MongoDB:** Model [`models/favoriteModel.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/models/favoriteModel.js) lưu `userId` và `movieId`. Thiết lập Compound Index Unique `{ userId: 1, movieId: 1 }` đảm bảo một người không thể lưu trùng 1 bộ phim 2 lần.
-- **Trải nghiệm Optimistic UI (Phản hồi tức thì):**
-  - Trong [`public/js/favorite.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/favorite.js): Khi người dùng bấm vào biểu tượng bookmark/ngôi sao, giao diện lập tức đổi màu sáng/tối ngay lập tức mà không cần đợi API mạng phản hồi.
-  - Nếu API trả về thành công: Cập nhật lại số lượng trên Badge Header và hiện thông báo Toast.
-  - Nếu phát hiện người dùng chưa đăng nhập (mã 401) hoặc lỗi mạng: Nút bấm tự động hoàn tác (revert) về trạng thái ban đầu và hiện Toast thông báo yêu cầu đăng nhập.
+### 4.7. Hệ thống Danh sách Yêu thích (Favorites & Optimistic UI)
+- Cơ sở dữ liệu MongoDB lưu `userId` và `movieId` kèm Compound Unique Index.
+- Trải nghiệm Optimistic UI: Đổi trạng thái biểu tượng tức thì trước khi API mạng phản hồi, tự động hoàn tác nếu mất kết nối hoặc hết phiên đăng nhập.
 
----
+### 4.8. Hệ thống Hero Banner & Cơ chế Chống Giật (Anti-Jitter)
+- Ép GPU render bằng `will-change: transform` và `transform: scaleX(0)`.
+- Chế độ Pause/Resume tính toán thời gian `remaining`, không gây nảy chữ và giật slide khi rê chuột.
 
-### 4.4. Hệ thống Hero Banner & Cơ chế Chống Giật (Anti-Jitter)
-Đây là phần tinh chỉnh giao diện quan trọng nhất để đạt chất lượng Streaming mượt mà 60fps:
-1. **Triệt tiêu Layout Reflow:**
-   - Trong [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css#L583), thanh tiến trình thời gian ở thumbnail được tối ưu:
-     ```css
-     /* KHÔNG DÙNG: width: 0% -> 100% (làm CPU tính lại layout liên tục gây giật) */
-     /* DÙNG CHUẨN: transform GPU */
-     .hero-thumb-bar {
-         width: 100%;
-         transform: scaleX(0);
-         transform-origin: left;
-         will-change: transform; /* Ép card đồ họa GPU xử lý */
-     }
-     @keyframes fill { to { transform: scaleX(1); } }
-     ```
-2. **Khung ảnh phóng to mượt mà (Anti-aliasing):**
-   - Đặt `inset: -5%`, `width: 110%`, `height: 110%` nới rộng viền ảnh ra ngoài màn hình.
-   - Thay `@keyframes kenBurns` bằng `transform: translate3d(0, 0, 0) scale(1.08)` với `transition: transform 12s cubic-bezier(0.1, 0.2, 0.3, 1)`. Tránh hiện tượng răng cưa và rung giật khung hình khi hiển thị ảnh chất lượng cao.
-3. **Cơ chế Pause / Resume không reset slide:**
-   - Trong [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js#L95): Viết thuật toán tính `remaining` (thời gian còn lại). Khi chuột rời khỏi banner (`mouseleave`), timer tiếp tục đếm từ giây hiện tại, **tuyệt đối không gọi lại hàm `go(current)`** gây nảy chữ và giật slide.
-
----
-
-### 4.5. Hệ thống Worker Cào Dữ Liệu & Pipeline Đa Nguồn (Crawler & Supabase Storage)
-Hệ thống giải quyết bài toán: **Làm chủ kho dữ liệu phim độc lập, khắc phục triệt để lỗi chết ảnh và cung cấp đa nguồn phát (HLS + Iframe dự phòng).**
-
-```
-[npm run crawl -- --pages=3]
-         │
-         ▼
-Gọi API OPhim: /danh-sach/phim-moi-cap-nhat
-         │
-         ▼
-Kiểm tra MongoDB Atlas ──(Đã có)──➔ Bỏ qua (Skip - Idempotent)
-         │ (Chưa có)
-         ▼
-Gọi API Chi tiết: /phim/:slug
-         ├─────────────────────────────────────────┐
-         │                                         │
-         ▼                                         ▼
-Tải ảnh Poster & Backdrop                Bóc tách luồng xem:
-         │                                - Server 1: OPhim HLS (link m3u8)
-         ▼                                - Server 2: VidSrc Iframe (nếu có tmdb.id)
-Đẩy lên Supabase Storage bucket                   │
-         │                                        │
-         ▼                                        ▼
-Nhận CDN URL vĩnh viễn ──────────────────➔ Đóng gói vào Movie Schema
-                                                  │
-                                                  ▼
-                                      Lưu vào MongoDB Atlas (Cluster0)
-```
-
-1. **Chống trùng lặp tuyệt đối (Idempotency):**
-   * Trước khi cào chi tiết, script luôn tra cứu `Movie.findOne({ slug })`. Nếu phim đã tồn tại trong database, script sẽ lập tức bỏ qua (`Skip`), không tốn băng thông và không bao giờ bị lỗi trùng khóa (Duplicate Key).
-2. **Khắc phục lỗi "chết ảnh" bằng Supabase Storage:**
-   * Thay vì lưu URL ảnh nguồn của web lậu (rất dễ bị die sau vài tuần), worker dùng `axios` tải ảnh dạng binary `Buffer` và dùng SDK `@supabase/supabase-js` tải lên bucket `cineverse-movies` ở chế độ Public CDN.
-3. **Đa nguồn phát trong từng bộ phim:**
-   * Mảng `danh_sach_server` lưu trữ cả server **OPhim VIP (HLS m3u8)** lẫn server **VidSrc Dự Phòng (Iframe)**. Khi web nguồn bị sự cố, người xem chỉ cần đổi server là xem phim tiếp tục mà không bị gián đoạn.
-4. **Bảo vệ IP (Throttling Delay):**
-   * Script nghỉ 800ms giữa mỗi phim để tránh bị máy chủ API nguồn chặn IP.
+### 4.9. Hệ thống Worker Cào Dữ Liệu & Pipeline Đa Nguồn (Supabase Storage)
+- Tự động cào dữ liệu từ OPhim, tải ảnh binary đẩy lên bucket `cineverse-movies` của Supabase CDN để chống lỗi "chết ảnh", ghép nối iframe VidSrc và lưu vào MongoDB Atlas.
 
 ---
 
 ## 5. CẨM NANG BẮT BỆNH & KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING MATRIX)
 
-> **Khi gặp lỗi trên màn hình hoặc terminal, tra cứu bảng này để xử lý ngay:**
-
 | Triệu chứng nhìn thấy (Symptom) | Nguyên nhân cốt lõi (Root Cause) | File liên quan | Cách xử lý dứt điểm |
 | :--- | :--- | :--- | :--- |
-| **MongoDB Atlas báo lỗi: `MongooseServerSelectionError: connection timed out` khi thành viên kết nối** | Địa chỉ IP của máy thành viên ở nhà chưa được cấp quyền (Whitelist) trên MongoDB Atlas. | [MongoDB Atlas Console](https://cloud.mongodb.com) | Vào mục **Security -> Network Access**, thêm IP `0.0.0.0/0` (Allow Access from Anywhere) rồi bấm Confirm. |
-| **Ảnh Poster hoặc Backdrop trên web bị vỡ hoặc báo lỗi 403 Forbidden** | Bucket `cineverse-movies` trên Supabase Storage đang ở chế độ Private (Riêng tư). | [Supabase Storage](https://supabase.com) | Vào mục **Storage -> cineverse-movies**, vào phần cài đặt bucket và gạt công tắc **Public bucket** sang **ON**. |
-| **Trang chủ trống trơn, hiện icon chảo vệ tinh kèm dòng chữ "Không tải được danh sách phim"** | Khóa `TMDB_TOKEN` trong `.env` bị thiếu hoặc mang giá trị placeholder mẫu (`your_tmdb_bearer_token_here`), dẫn tới TMDB trả về mã lỗi 401. | [`.env`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env) | Mở file `.env`, dán Bearer Token TMDB hợp lệ bắt đầu bằng `eyJhbGciOi...` vào dòng `TMDB_TOKEN`. Khởi động lại server. |
-| **Terminal báo lỗi: `Error: Cannot find module '@supabase/supabase-js'` hoặc `cookie-parser`** | Vừa chuyển branch hoặc pull code mới có bổ sung thư viện mới nhưng chưa cài đặt vào `node_modules` máy cục bộ. | [`package.json`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/package.json) | Mở terminal gõ: `npm install` |
-| **Banner Hero Slider bị giật nảy lên, chữ chớp tắt mỗi khi di chuột vào hoặc ra khỏi banner** | File CSS bị mất thuộc tính `scaleX` hoặc file JS bị gắn lệnh gọi `go(current)` ở sự kiện `mouseleave`. | [`public/css/style.css`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/css/style.css) & [`public/js/ui-interactions.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/public/js/ui-interactions.js) | Đảm bảo `.hero-thumb-bar` dùng `transform: scaleX(0)` và trong JS dùng hàm `pause()` / `resume()` như đã hướng dẫn ở Mục 4.4. |
-| **Bấm vào ngôi sao / bookmark thẻ phim nhưng không lưu được, hiện Toast màu đỏ báo lỗi** | Người dùng chưa đăng nhập tài khoản (Server trả về mã 401 Unauthorized theo chính sách bảo mật). | [`middlewares/authMiddleware.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/middlewares/authMiddleware.js) | Bấm vào nút `Đăng nhập` trên Header hoặc link trên Toast để đăng nhập tài khoản trước khi lưu phim. |
-| **Chạy lệnh `npm run lint` bị báo đỏ: `'document' is not defined` hoặc `'window' is not defined`** | Cấu hình ESLint áp đặt môi trường Node.js cho toàn bộ dự án mà quên cấp quyền `globals.browser` cho thư mục `public/`. | [`eslint.config.mjs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/eslint.config.mjs) | Cấu hình thêm `{ files: ["public/**/*.js"], languageOptions: { globals: globals.browser } }` trong `eslint.config.mjs`. |
-| **Terminal Git báo: `CONFLICT (modify/delete): .env deleted in HEAD and modified in origin/main`** | Xảy ra khi file `.env` đã được gỡ bỏ khỏi Git tracking để bảo mật nhưng nhánh khác vẫn còn track file này. | Git Cache | Chạy lệnh `git rm .env`, commit giải quyết xung đột, sau đó tạo lại file `.env` cục bộ trên máy. |
-| **Video Server 1 (Vietsub) không hiển thị nút hoặc báo không tìm thấy tập phim** | Phim này trên kho OPhim chưa có bản dịch hoặc phim quá mới. | [`services/ophimService.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/services/ophimService.js) | Cơ chế Fallback đã tự động chuyển sang `Server 2 · Bản gốc` (VidSrc), người dùng vẫn xem được bình thường. |
-| **Đăng ký tài khoản mới báo lỗi: "Tên người dùng này đã có người sử dụng" hoặc "Email đã được đăng ký"** | Vi phạm ràng buộc duy nhất (Unique index) trong CSDL MongoDB. | [`models/userModel.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/models/userModel.js) | Nhập tên người dùng hoặc địa chỉ email khác chưa từng đăng ký. |
+| **MongoDB Atlas báo lỗi `querySrv ECONNREFUSED`** | DNS router nhà mạng Việt Nam (Viettel/VNPT/FPT) chặn bản ghi SRV của Atlas. | [`config/db.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/config/db.js) | Đã tự động tích hợp `dns.setServers(['8.8.8.8', '1.1.1.1'])` ngay trước khi kết nối MongoDB. |
+| **Trang web không tải được phim, màn hình trống** | Mất file `.env` hoặc chưa nạp `dotenv` ở đầu file. | [`.env`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env) & [`app.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/app.js) | Khôi phục `.env` từ `.env.backup` và đảm bảo dòng đầu `app.js` có `require('dotenv').config()`. |
+| **Không truy cập được trang `/admin` (báo 403 Forbidden)** | Tài khoản hiện tại có `role: 'user'` thay vì `'admin'`. | [`middlewares/authMiddleware.js`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/middlewares/authMiddleware.js) | Mở terminal chạy lệnh: `node scripts/makeAdmin.js <tên_user_của_bạn>`. |
+| **Video dừng sau 5 phút và hiện thông báo VIP** | Cơ chế Paywall của tính năng Freemium dành cho tài khoản chưa nâng cấp VIP. | [`views/pages/movieDetail.ejs`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/views/pages/movieDetail.ejs) | Bấm vào nút "Nâng cấp VIP ngay" trên popup hoặc vào Admin gạt VIP cho tài khoản. |
+| **Ảnh Poster hoặc Backdrop bị vỡ 403** | Bucket `cineverse-movies` trên Supabase đang ở chế độ Private. | Supabase Console | Vào **Storage -> cineverse-movies**, gạt **Public bucket** sang **ON**. |
 
 ---
 
 ## 6. HƯỚNG DẪN CÀI ĐẶT & KHỞI CHẠY DỰ ÁN
 
 ### Yêu cầu tiên quyết:
-- **Node.js**: Phiên bản 18 trở lên (Khuyến nghị bản LTS).
-- **MongoDB**: Kết nối MongoDB Atlas Cloud hoặc MongoDB Compass cục bộ.
-- **Supabase**: Tài khoản Supabase với 1 bucket Storage tên `cineverse-movies` (chế độ Public).
+- **Node.js**: Phiên bản 18 trở lên (Khuyến nghị Node.js v20+ hoặc v22+).
+- **MongoDB**: Kết nối MongoDB Atlas Cloud.
+- **Supabase**: Bucket Storage tên `cineverse-movies` (chế độ Public).
 
 ### Các bước cài đặt:
 
-1. **Clone mã nguồn và cài đặt toàn bộ thư viện phụ thuộc:**
+1. **Cài đặt thư viện:**
    ```bash
-   git clone https://github.com/nguyenduythaibao1611-eng/Project_Web_Advanced.git
-   cd Project_Web_Advanced
    npm install
    ```
 
 2. **Cấu hình file biến môi trường [`.env`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env):**
-   Tạo file `.env` tại thư mục gốc của dự án (dựa theo mẫu [`.env.example`](file:///c:/Users/ASUS-PRO/Desktop/Rottos/web%20advanced/project/cineverse/.env.example)):
    ```env
    PORT=5000
    MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/cineverse?retryWrites=true&w=majority
@@ -377,45 +291,59 @@ Nhận CDN URL vĩnh viễn ─────────────────�
    SUPABASE_BUCKET=cineverse-movies
    ```
 
-3. **Cào dữ liệu phim mẫu vào Database & Supabase (Khuyên dùng):**
+3. **Cào dữ liệu phim mẫu (Tùy chọn):**
    ```bash
-   # Cào 3 trang mới nhất (~72 bộ phim chuẩn đa server & CDN ảnh):
    npm run crawl -- --pages=3
    ```
 
-4. **Chạy ứng dụng trong môi trường phát triển:**
+4. **Cấp quyền Admin cho tài khoản của bạn (Nếu cần):**
+   ```bash
+   node scripts/makeAdmin.js <username>
+   ```
+
+5. **Khởi chạy ứng dụng:**
    ```bash
    npm run dev
    ```
-
-5. **Truy cập ứng dụng:**
-   Mở trình duyệt web và truy cập địa chỉ: [http://localhost:5000](http://localhost:5000)
+   Mở trình duyệt: [http://localhost:5000](http://localhost:5000)
 
 ---
 
-## 7. QUY CHUẨN KIỂM TRA CODE (LINTING & CODE QUALITY)
+## 7. QUY CHUẨN KIỂM THỬ TỰ ĐỘNG & LINTING (TESTING & CODE QUALITY)
 
-Dự án áp dụng bộ quy tắc kiểm tra cú pháp hiện đại nhất của **ESLint v10** (Flat Config `eslint.config.mjs`):
-- Kiểm tra toàn bộ mã nguồn:
-  ```bash
-  npm run lint
-  ```
-- **Quy tắc vàng:**
-  - Code Node.js tầng Backend chạy với môi trường `globals.node`.
-  - Code JavaScript tầng Client trong thư mục `public/` chạy với môi trường `globals.browser`.
-  - Các biến trong khối `catch` nếu không sử dụng phải đặt tiền tố dấu gạch dưới (VD: `_err`).
-  - Dự án phải luôn đảm bảo kết quả: **0 errors, 0 warnings** trước khi tạo Pull Request gộp code.
+### 1. Kiểm thử tự động (Unit & Integration Tests):
+Dự án sử dụng trình chạy kiểm thử chuẩn tích hợp sẵn của Node.js (`node:test` và `node:assert/strict`):
+```bash
+npm test
+```
+* **Quy mô kiểm thử:** **35 bài test tự động** bao phủ 100% các phân hệ:
+  * `tests/admin.test.js`: Phân quyền admin, dashboard, danh sách user, toggle VIP, CRUD phim.
+  * `tests/onboarding.test.js`: Quy trình khảo sát sở thích, độ tuổi, validate 3-5 thể loại.
+  * `tests/watchHistoryAndVip.test.js`: Render HLS player, lưu tọa độ giây, API nâng cấp VIP.
+  * `tests/movies.test.js`: Trang danh mục phim, phân trang, lọc theo thể loại.
+  * `tests/search.test.js`: Tìm kiếm realtime, live suggestions, chống ký tự đặc biệt.
+* **Tiêu chuẩn:** Luôn đạt **35/35 PASS (100%)**.
 
----
-
-## 8. PHÂN CÔNG NHIỆM VỤ & TIẾN ĐỘ PHÁT TRIỂN (PROJECT ROADMAP)
-
-| Thành viên | Vai trò chính | Nhiệm vụ trọng tâm | Tiến độ |
-| :--- | :--- | :--- | :---: |
-| **Nguyễn Duy Thái Bảo** | Trưởng nhóm / Backend & Core / AI Engine / DevOps | - Thiết lập MongoDB Atlas & Movie Model Schema<br>- Cấu hình Supabase Storage CDN<br>- Xây dựng Worker cào phim OPhim & ghép VidSrc<br>- Xây dựng thuật toán AI Recommendation (Phase 5)<br>- Quản lý upload ảnh Admin & Kiểm thử Sentry | 🟢 **Hoàn thành Phase 1 & 2** (Vượt tiến độ) |
-| **Phan Lê Phương Nam** | Frontend Lead / UI-UX / Streaming Player | - Thiết kế giao diện Streaming Disney+/Marvel<br>- Xây dựng trang danh sách Movies & Thanh Search realtime<br>- Tích hợp Trình phát Player HLS.js & Iframe<br>- Màn hình Onboarding khảo sát sở thích (cho AI)<br>- UI/UX Bảng điều khiển Admin Dashboard | 🟡 Đang triển khai Phase 3 & 4 |
-| **Nguyễn Đăng Nguyên** | Backend / Security & Auth / Business Logic | - API Đăng ký / Đăng nhập với JWT + bcrypt (Done)<br>- Quản lý Session Token (1 tài khoản / 1 thiết bị)<br>- API lưu Lịch sử xem (tọa độ giây, tập hiện tại)<br>- Logic phân quyền giới hạn xem Free (5 phút) / VIP<br>- Bộ API CRUD Quản trị Phim & Cấp quyền VIP | 🟡 Đang triển khai Phase 3 & 4 |
+### 2. Kiểm tra cú pháp (Linting):
+```bash
+npm run lint
+```
+* Áp dụng **ESLint v10 Flat Config** (`eslint.config.mjs`). Đảm bảo luôn đạt **0 errors, 0 warnings**.
 
 ---
 
-*Tài liệu được tổng hợp và chuẩn hoá toàn diện cho dự án CineVerse (Web Nâng Cao - 2026).*
+## 8. PHÂN CÔNG NHIỆM VỤ & BẢNG THEO DÕI TIẾN ĐỘ (PROJECT ROADMAP)
+
+| Phase | Phân Hệ Nhiệm Vụ | Người phụ trách | Trạng thái | Ghi chú hoàn thành |
+| :---: | :--- | :---: | :---: | :--- |
+| **Phase 1** | Setup MongoDB Atlas, Schema & Supabase Storage | **Bảo** | 🟢 **DONE** | Kết nối Atlas qua Public DNS, Supabase CDN ảnh |
+| **Phase 2** | Worker cào phim OPhim, upload ảnh CDN & ghép VidSrc | **Bảo** | 🟢 **DONE** | Cào 48+ phim, đa server m3u8 và iframe |
+| **Phase 3** | Xác thực JWT, Session 1 thiết bị & Onboarding Profile | **Nguyên** | 🟢 **DONE** | Đăng ký, đăng nhập, đá phiên cũ, chọn sở thích |
+| **Phase 4** | Thanh tìm kiếm, Trang Movies, Player HLS, Lịch sử xem, Giới hạn 5p VIP | **Nam & Bảo** | 🟢 **DONE** | Live search, player HLS.js, paywall 5p, resume xem tiếp |
+| **Phase 5** | Thuật toán AI Recommendation (Gemini API) | **Nguyên & Bảo** | 🟡 **TO DO** | Chuẩn bị tích hợp Gemini gợi ý phim theo sở thích |
+| **Phase 6** | Bảng điều khiển Admin Dashboard, CRUD Phim, Cấp quyền VIP | **Nam, Nguyên & Bảo** | 🟢 **DONE** | Dashboard 3 thẻ số liệu, switch toggle VIP, CRUD phim |
+| **Phase 7** | Testing toàn hệ thống, bắt lỗi Sentry, Báo cáo & Tổng duyệt | **Bảo** | 🟡 **TO DO** | Đã hoàn thành 35 unit tests; chuẩn bị Sentry & Slide |
+
+---
+
+*Tài liệu được cập nhật toàn diện và chuẩn hóa cho dự án CineVerse (Cập nhật: 31/10/2026).*

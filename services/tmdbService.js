@@ -103,3 +103,23 @@ exports.getMoviesByGenre = async (genreId, limit = 15) => {
         return [];
     }
 };
+
+
+/**
+ * 6. Lấy danh sách Top phim thịnh hành trong ngày hôm nay từ TMDB Trending API
+ * Endpoint: /trending/movie/day?language=vi-VN
+ */
+exports.getTrendingDay = async (limit = 10) => {
+    try {
+        const response = await tmdbApi.get('/trending/movie/day', {
+            params: {
+                language: 'vi-VN'
+            },
+            timeout: 8000
+        });
+        return (response.data.results || []).slice(0, limit);
+    } catch (error) {
+        console.error('Lỗi lấy phim thịnh hành TMDB hôm nay:', error.message);
+        return [];
+    }
+};
