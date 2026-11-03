@@ -6,6 +6,8 @@ const User = require('../models/userModel');
 const Movie = require('../models/movieModel');
 const Favorite = require('../models/favoriteModel');
 const Log = require('../models/adminLogModel');
+const VipPlan = require('../models/vipPlanModel');
+const Order = require('../models/orderModel');
 const { text, choice, movieInput } = require('../utils/adminValidation');
 
 function httpError(message, status = 400) {
@@ -167,6 +169,123 @@ exports.upload = async (req, res) => {
         await fs.writeFile(path.join(directory, name), buffer, { flag: 'wx' });
     });
     res.json({ url: `/uploads/admin/${name}` });
+};
+
+// ==========================================
+// QUẢN TRỊ GÓI CƯỚC VIP ĐỘNG (VIP PLANS)
+// ==========================================
+
+exports.plans = async (req, res) => {
+    await VipPlan.seedDefaultPlans();
+    const plans = await VipPlan.find().sort({ order: 1, createdAt: 1 }).lean();
+    render(res, 'plans', { section: 'plans', plans, title: 'Quản lý Gói cước VIP' });
+};
+
+exports.planForm = async (req, res) => {
+    const plan = req.params.id ? await VipPlan.findById(id(req.params.id)).lean() : {
+        code: '', name: '', durationDays: 30, price: 49000, originalPrice: 69000,
+        badge: '', description: '', features: [], isPopular: false, isActive: true, order: 0
+    };
+    if (!plan) throw httpError('Không tìm thấy gói cước.', 404);
+    render(res, 'planForm', { section: 'plans', plan, editing: Boolean(plan._id), error: '' });
+};
+
+exports.savePlan = async (req, res) => {
+    const target = req.params.id ? id(req.params.id) : null;
+    const { code, name, durationDays, price, originalPrice, badge, description, features, isPopular, isActive, order } = req.body;
+
+    let parsedFeatures = [];
+    if (Array.isArray(features)) {
+        parsedFeatures = features.map(f => String(f).trim()).filter(Boolean);
+    } else if (typeof features === 'string') {
+        parsedFeatures = features.split('\n').map(f => f.trim()).filter(Boolean);
+    }
+
+    const planData = {
+        code: String(code || '').trim().toLowerCase(),
+        name: String(name || '').trim(),
+        durationDays: Math.max(1, parseInt(durationDays, 10) || 30),
+        price: Math.max(0, parseInt(price, 10) || 0),
+        originalPrice: Math.max(0, parseInt(originalPrice, 10) || 0),
+        badge: String(badge || '').trim(),
+        description: String(description || '').trim(),
+        features: parsedFeatures.length > 0 ? parsedFeatures : [
+            'Xem toàn bộ kho phim VIP không giới hạn 5 phút',
+            'Trải nghiệm 2 máy chủ phát Full HD / 4K',
+            'Không quảng cáo ngắt quãng'
+        ],
+        isPopular: isPopular === 'true' || isPopular === true || isPopular === 'on',
+        isActive: isActive === 'true' || isActive === true || isActive === 'on',
+        order: parseInt(order, 10) || 0
+    };
+
+    if (!planData.code || !planData.name) {
+        throw httpError('Vui lòng nhập đầy đủ mã gói và tên gói cước.');
+    }
+
+    await audited(req, target ? 'plan.update' : 'plan.create', planData.code,
+        `${planData.name} · Giá: ${planData.price.toLocaleString('vi-VN')}đ · ${planData.durationDays} ngày`, async () => {
+            if (target) {
+                return VipPlan.findByIdAndUpdate(target, { $set: planData }, { runValidators: true });
+            }
+            return VipPlan.create(planData);
+        });
+
+    res.redirect('/admin/plans?saved=1');
+};
+
+exports.togglePlan = async (req, res) => {
+    const target = id(req.params.id);
+    const plan = await VipPlan.findById(target);
+    if (!plan) throw httpError('Không tìm thấy gói cước.', 404);
+
+    const newStatus = !plan.isActive;
+    await audited(req, 'plan.toggle', target, `Đổi trạng thái gói ${plan.name} -> ${newStatus ? 'Bật' : 'Tắt'}`, async () => {
+        plan.isActive = newStatus;
+        await plan.save();
+    });
+
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+        return res.json({ success: true, isActive: newStatus });
+    }
+    res.redirect('/admin/plans?saved=1');
+};
+
+exports.deletePlan = async (req, res) => {
+    const target = id(req.params.id);
+    await audited(req, 'plan.delete', target, 'Xóa gói cước VIP', async () => {
+        await VipPlan.findByIdAndDelete(target);
+    });
+    res.redirect('/admin/plans?saved=1');
+};
+
+// ==========================================
+// QUẢN TRỊ ĐƠN HÀNG THANH TOÁN (ORDERS)
+// ==========================================
+
+exports.orders = async (req, res) => {
+    const query = pageQuery(req);
+    const state = choice(req.query.state || '', ['', 'pending', 'completed', 'expired', 'failed']);
+    const filter = {};
+    if (query.q) filter.orderCode = new RegExp(query.pattern, 'i');
+    if (state) filter.status = state;
+
+    const [items, total, revenueResult] = await Promise.all([
+        Order.find(filter)
+            .populate('user', 'username email')
+            .sort({ createdAt: -1 })
+            .skip((query.page - 1) * 20)
+            .limit(20)
+            .lean(),
+        Order.countDocuments(filter),
+        Order.aggregate([
+            { $match: { status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ])
+    ]);
+
+    const totalRevenue = (revenueResult[0] && revenueResult[0].total) ? revenueResult[0].total : 0;
+    render(res, 'orders', { section: 'orders', ...query, state, items, total, totalRevenue, pages: Math.ceil(total / 20) });
 };
 
 exports.error = (error, req, res, _next) => {

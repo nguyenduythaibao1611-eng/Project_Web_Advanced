@@ -1,0 +1,105 @@
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">TRANSACTION HISTORY</span>
+        <h1>Đơn hàng & Doanh thu VIP</h1>
+        <p>Quản lý lịch sử giao dịch nạp VIP qua VietQR, MoMo và đối soát thanh toán tự động.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <article class="stat">
+        <span>Tổng doanh thu thực nhận</span>
+        <strong style="color: #fbbf24;"><%= Number(totalRevenue || 0).toLocaleString('vi-VN') %> đ</strong>
+        <small>Từ các đơn đã thanh toán thành công</small>
+    </article>
+    <article class="stat">
+        <span>Tổng số đơn phát sinh</span>
+        <strong><%= total.toLocaleString('vi-VN') %></strong>
+        <small>Bao gồm cả đang chờ và đã hoàn tất</small>
+    </article>
+</div>
+
+<form class="filters" method="get">
+    <label>
+        Tìm theo mã đơn
+        <input name="q" value="<%= q %>" maxlength="100" placeholder="VD: CV1024...">
+    </label>
+    <label>
+        Trạng thái
+        <select name="state">
+            <% [['','Tất cả'],['completed','Đã thanh toán'],['pending','Đang chờ thanh toán'],['expired','Đã hết hạn']].forEach(([value,label]) => { %>
+                <option value="<%= value %>" <%= state === value ? 'selected' : '' %>><%= label %></option>
+            <% }); %>
+        </select>
+    </label>
+    <button class="button primary">Lọc</button>
+    <a class="button subtle" href="/admin/orders">Đặt lại</a>
+</form>
+
+<section class="panel table-wrap">
+    <table>
+        <caption class="sr-only">Danh sách đơn hàng thanh toán</caption>
+        <thead>
+            <tr>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Gói VIP</th>
+                <th>Số tiền</th>
+                <th>Cổng</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (items && items.length) { %>
+                <% items.forEach(order => { %>
+                    <tr>
+                        <td>
+                            <strong style="letter-spacing: 0.05em;"><%= order.orderCode %></strong>
+                            <small>ND: <%= order.transferContent %></small>
+                        </td>
+                        <td>
+                            <% if (order.user) { %>
+                                <strong><%= order.user.username %></strong>
+                                <small><%= order.user.email %></small>
+                            <% } else { %>
+                                <span style="opacity: 0.5;">Tài khoản đã xóa</span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <strong><%= order.planName %></strong>
+                            <small><%= order.durationDays %> ngày</small>
+                        </td>
+                        <td>
+                            <strong style="color: #fbbf24;"><%= Number(order.amount).toLocaleString('vi-VN') %> đ</strong>
+                        </td>
+                        <td>
+                            <span class="badge" style="text-transform: uppercase;"><%= order.paymentMethod %></span>
+                        </td>
+                        <td>
+                            <% if (order.status === 'completed') { %>
+                                <span class="badge green">● Đã thanh toán</span>
+                            <% } else if (order.status === 'pending') { %>
+                                <span class="badge gold">⏳ Đang chờ</span>
+                            <% } else { %>
+                                <span class="badge">✕ Hết hạn</span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <small><%= new Date(order.createdAt).toLocaleString('vi-VN') %></small>
+                            <% if (order.paidAt) { %>
+                                <small style="color: #34d399;">Xác nhận: <%= new Date(order.paidAt).toLocaleTimeString('vi-VN') %></small>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="7" class="empty">Chưa có đơn hàng nào phù hợp với bộ lọc.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</section>
+
+<%- include('pagination') %>

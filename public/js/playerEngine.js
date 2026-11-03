@@ -55,14 +55,41 @@
         return [];
     }
 
-    // Đếm tổng thời gian xem tích lũy để khóa VIP (KHÔNG bao giờ bị reset khi đổi tập)
+    // Lưu và đồng bộ thời gian xem VIP qua localStorage để tránh người dùng F5 reset bộ đếm 5 phút
+    const STORAGE_KEY = 'cineverse_vip_watch_' + (MOVIE_ID || 'default');
+
+    // Đếm tổng thời gian xem tích lũy để khóa VIP (KHÔNG bao giờ bị reset khi đổi tập hay F5 trang)
     let totalVipWatchSeconds = 0;
+    if (IS_MOVIE_VIP && !isVipUser) {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored !== null) {
+                const parsed = parseFloat(stored);
+                if (!isNaN(parsed) && parsed > 0) {
+                    totalVipWatchSeconds = parsed;
+                }
+            }
+        } catch (_err) {
+            console.warn('[PlayerEngine] Lỗi đọc localStorage VIP:', _err);
+        }
+    }
+
+    function saveVipWatchTime() {
+        if (IS_MOVIE_VIP && !isVipUser) {
+            try {
+                localStorage.setItem(STORAGE_KEY, String(Math.floor(totalVipWatchSeconds)));
+            } catch (_err) { /* ignore */ }
+        }
+    }
+
     let currentEpisodeWatchedSeconds = Math.max(initialResumeSeconds, 0);
     let lastVideoTime = 0;
 
-    // Helper kiểm tra có cần áp dụng khóa 5 phút VIP hay không
+    // Helper kiểm tra có cần áp dụng khóa 5 phút VIP hay không (Phương án 2: Chặn cả xem tích lũy và tua qua 5 phút)
     function isLockEnforced() {
-        return IS_MOVIE_VIP && !isVipUser && totalVipWatchSeconds >= FREE_LIMIT_SECONDS;
+        if (!IS_MOVIE_VIP || isVipUser) return false;
+        const currentPos = (video && !isNaN(video.currentTime)) ? video.currentTime : 0;
+        return (totalVipWatchSeconds >= FREE_LIMIT_SECONDS) || (currentPos >= FREE_LIMIT_SECONDS);
     }
 
     // Elements
@@ -173,12 +200,16 @@
             const delta = current - lastVideoTime;
             if (delta > 0 && delta < 2) {
                 totalVipWatchSeconds += delta;
+                saveVipWatchTime();
             }
             lastVideoTime = current;
             currentEpisodeWatchedSeconds = Math.floor(current);
 
             if (isLockEnforced()) {
                 video.pause();
+                if (video.currentTime >= FREE_LIMIT_SECONDS) {
+                    video.currentTime = Math.min(299, Math.max(0, video.currentTime));
+                }
                 showVipPaywall();
             }
             checkAndSyncHistory();
@@ -188,11 +219,33 @@
             lastVideoTime = video.currentTime || 0;
             if (isLockEnforced()) {
                 video.pause();
+                if (video.currentTime >= FREE_LIMIT_SECONDS) {
+                    video.currentTime = Math.min(299, Math.max(0, video.currentTime));
+                }
                 showVipPaywall();
             }
         });
 
         video.addEventListener('seeking', function() {
+            if (IS_MOVIE_VIP && !isVipUser && video.currentTime >= FREE_LIMIT_SECONDS) {
+                video.pause();
+                video.currentTime = Math.min(299, Math.max(0, video.currentTime));
+                showVipPaywall();
+                return;
+            }
+            if (isLockEnforced()) {
+                video.pause();
+                showVipPaywall();
+            }
+        });
+
+        video.addEventListener('seeked', function() {
+            if (IS_MOVIE_VIP && !isVipUser && video.currentTime >= FREE_LIMIT_SECONDS) {
+                video.pause();
+                video.currentTime = Math.min(299, Math.max(0, video.currentTime));
+                showVipPaywall();
+                return;
+            }
             if (isLockEnforced()) {
                 video.pause();
                 showVipPaywall();
@@ -206,6 +259,7 @@
         iframeTimer = setInterval(function() {
             totalVipWatchSeconds++;
             currentEpisodeWatchedSeconds++;
+            saveVipWatchTime();
 
             // Khóa VIP 5 phút tích lũy trên Server 2
             if (isLockEnforced()) {
@@ -316,6 +370,11 @@
         const isTargetEpisode = !HISTORY_EPISODE_NAME || (currentEp && currentEp.name === HISTORY_EPISODE_NAME);
 
         if (!isTargetEpisode || initialResumeSeconds < 10) return;
+
+        // Nếu phim VIP mà tài khoản Free và điểm xem dở >= 300s, không cho tua tới đó
+        if (IS_MOVIE_VIP && !isVipUser && initialResumeSeconds >= FREE_LIMIT_SECONDS) {
+            initialResumeSeconds = 299;
+        }
 
         if (isLockEnforced()) {
             showVipPaywall();
@@ -610,11 +669,43 @@
     window.switchToServer = switchToServer;
     window.playEpisode = playEpisode;
 
-    // 11. Xử lý Nút Nâng Cấp VIP (Kích hoạt nhanh / Instant Upgrade)
+    function unlockVipPlayer(message) {
+        isVipUser = true;
+        totalVipWatchSeconds = 0;
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (_err) { /* ignore */ }
+        hideVipPaywall();
+
+        const heroMeta = document.querySelector('.hero-meta');
+        if (heroMeta && !heroMeta.querySelector('.badge-vip-pill')) {
+            const vipBadge = document.createElement('span');
+            vipBadge.className = 'badge-vip-pill';
+            vipBadge.innerHTML = '<i class="fa-solid fa-crown"></i> VIP';
+            heroMeta.appendChild(vipBadge);
+        }
+
+        if (typeof window.showToast === 'function') {
+            window.showToast(message || 'Chúc mừng! Gói VIP đã được kích hoạt thành công.', 'success');
+        }
+
+        loadCurrentEpisodeSource(true);
+    }
+    window.onVipUpgradeSuccess = unlockVipPlayer;
+    window.addEventListener('vipUpgraded', function () {
+        unlockVipPlayer();
+    });
+
+    // 11. Xử lý Nút Nâng Cấp VIP (Mở Modal VietQR / Thanh toán)
     if (btnUpgradeVip) {
         btnUpgradeVip.addEventListener('click', async function() {
             if (!IS_LOGGED_IN) {
                 window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + '#player');
+                return;
+            }
+
+            if (typeof window.openPaymentModal === 'function') {
+                window.openPaymentModal();
                 return;
             }
 
@@ -629,22 +720,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    isVipUser = true;
-                    hideVipPaywall();
-
-                    const heroMeta = document.querySelector('.hero-meta');
-                    if (heroMeta && !heroMeta.querySelector('.badge-vip-pill')) {
-                        const vipBadge = document.createElement('span');
-                        vipBadge.className = 'badge-vip-pill';
-                        vipBadge.innerHTML = '<i class="fa-solid fa-crown"></i> VIP';
-                        heroMeta.appendChild(vipBadge);
-                    }
-
-                    if (typeof window.showToast === 'function') {
-                        window.showToast(result.message || 'Chúc mừng! Bạn đã là thành viên VIP.', 'success');
-                    }
-
-                    loadCurrentEpisodeSource(true);
+                    unlockVipPlayer(result.message);
                 } else {
                     alert(result.message || 'Không thể kích hoạt VIP lúc này. Vui lòng thử lại sau.');
                     btnUpgradeVip.disabled = false;
@@ -663,7 +739,13 @@
         btnRewatchStart.addEventListener('click', function() {
             totalVipWatchSeconds = 0;
             currentEpisodeWatchedSeconds = 0;
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (_err) { /* ignore */ }
             hideVipPaywall();
+            if (video) {
+                video.currentTime = 0;
+            }
             loadCurrentEpisodeSource(true);
         });
     }
@@ -673,6 +755,20 @@
         setupEpisodeListeners();
         attachPaywallListeners();
         setupResumePrompt();
+
+        // Kiểm tra khóa VIP ngay từ đầu (nếu người dùng đã xem hết 5 phút từ trước)
+        if (isLockEnforced()) {
+            if (video) {
+                video.pause();
+                video.style.display = 'none';
+            }
+            if (iframe) {
+                iframe.src = 'about:blank';
+                iframe.style.display = 'none';
+            }
+            showVipPaywall();
+            return;
+        }
 
         const s1Ep = SERVERS[0]?.episodes?.[currentEpisodeIndex];
         const m3u8Url = safeHttpUrl(s1Ep?.m3u8 || M3U8_URL);

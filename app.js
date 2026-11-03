@@ -8,6 +8,9 @@ const routes = require('./routes');
 
 const app = express();
 
+// Hỗ trợ Reverse Proxy trên Cloud (Render/Cloudflare) để xử lý HTTPS cookie chuẩn xác
+app.set('trust proxy', 1);
+
 app.use((req, res, next) => {
     res.set('X-Content-Type-Options', 'nosniff');
     next();

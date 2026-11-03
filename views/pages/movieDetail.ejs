@@ -7,7 +7,7 @@
     const m3u8Source = (typeof ophimM3u8 !== 'undefined' && ophimM3u8) ? ophimM3u8 : '';
     const embedSource = (typeof ophimEmbed !== 'undefined' && ophimEmbed) ? ophimEmbed : ((typeof ophimEmbedLink !== 'undefined' && ophimEmbedLink) ? ophimEmbedLink : '');
     const vidsrcSource = (typeof vidsrcLink !== 'undefined' && vidsrcLink) ? vidsrcLink : '';
-    const userIsVip = (typeof isVip !== 'undefined') ? Boolean(isVip) : Boolean(locals.user && locals.user.isVip);
+    const userIsVip = (typeof isVip !== 'undefined') ? Boolean(isVip) : Boolean(locals.user && (locals.user.isVip || locals.user.role === 'admin'));
     const resumeSeconds = (typeof lastWatchedSeconds !== 'undefined') ? Number(lastWatchedSeconds) : 0;
 %>
 
@@ -254,3 +254,7 @@
 
 <!-- Module Trình phát Đa Server & Khóa VIP độc lập -->
 <script src="/js/playerEngine.js" defer></script>
+
+
+<!-- Nhúng Modal Thanh Toán VietQR -->
+<%- include('../partials/paymentModal') %>

@@ -1,0 +1,118 @@
+<div class="pricing-container">
+    <header class="pricing-header">
+        <div class="pricing-badge">
+            <i class="fa-solid fa-crown"></i> CINEVERSE VIP PASS
+        </div>
+        <h1 class="pricing-title">Trải Nghiệm Điện Ảnh Đỉnh Cao</h1>
+        <p class="pricing-subtitle">
+            Mở khóa toàn bộ kho phim VIP không giới hạn 5 phút, máy chủ tốc độ cao và chất lượng Full HD / 4K siêu nét.
+        </p>
+    </header>
+
+    <div class="pricing-grid">
+        <% if (plans && plans.length > 0) { %>
+            <% plans.forEach(plan => { %>
+                <div class="pricing-card <%= plan.isPopular ? 'is-popular' : '' %>" data-plan-code="<%= plan.code %>">
+                    <% if (plan.badge) { %>
+                        <div class="pricing-card-badge"><%= plan.badge %></div>
+                    <% } %>
+
+                    <div class="pricing-card-header">
+                        <h2 class="plan-name"><%= plan.name %></h2>
+                        <p class="plan-desc"><%= plan.description || 'Gói cước xem phim không giới hạn' %></p>
+                    </div>
+
+                    <div class="plan-price-box">
+                        <div class="plan-price-main">
+                            <span class="plan-price"><%= Number(plan.price).toLocaleString('vi-VN') %></span>
+                            <span class="plan-currency">đ</span>
+                        </div>
+                        <div class="plan-duration">/ <%= plan.durationDays %> ngày</div>
+                        <% if (plan.originalPrice && plan.originalPrice > plan.price) { %>
+                            <div class="plan-original-price">
+                                <span>Giá gốc: <%= Number(plan.originalPrice).toLocaleString('vi-VN') %> đ</span>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <ul class="plan-features">
+                        <% if (plan.features && plan.features.length > 0) { %>
+                            <% plan.features.forEach(feature => { %>
+                                <li>
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span><%= feature %></span>
+                                </li>
+                            <% }); %>
+                        <% } else { %>
+                            <li><i class="fa-solid fa-circle-check"></i> <span>Xem phim VIP không giới hạn 5 phút</span></li>
+                            <li><i class="fa-solid fa-circle-check"></i> <span>Chất lượng hình ảnh 1080p / 4K</span></li>
+                            <li><i class="fa-solid fa-circle-check"></i> <span>Không quảng cáo ngắt quãng</span></li>
+                        <% } %>
+                    </ul>
+
+                    <div class="plan-action">
+                        <% if (locals.user) { %>
+                            <button
+                                type="button"
+                                class="btn-buy-vip <%= plan.isPopular ? 'btn-popular' : '' %>"
+                                onclick="openPaymentModal('<%= plan.code %>')"
+                            >
+                                <i class="fa-solid fa-bolt"></i> Nâng cấp ngay
+                            </button>
+                        <% } else { %>
+                            <a href="/login?redirect=/pricing" class="btn-buy-vip <%= plan.isPopular ? 'btn-popular' : '' %>">
+                                Đăng nhập để mua
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+
+    <!-- Bảng so sánh quyền lợi Free vs VIP -->
+    <section class="pricing-comparison">
+        <h2 class="comparison-title">So sánh quyền lợi Thành viên</h2>
+        <div class="comparison-table-wrap">
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Tính năng</th>
+                        <th>Tài khoản Thường</th>
+                        <th><span class="badge-vip-pill"><i class="fa-solid fa-crown"></i> CineVerse VIP</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Kho phim thường (329+ phim)</td>
+                        <td><i class="fa-solid fa-check text-green"></i> Xem trọn bộ</td>
+                        <td><i class="fa-solid fa-check text-green"></i> Xem trọn bộ</td>
+                    </tr>
+                    <tr>
+                        <td>Kho phim VIP chiếu rạp đỉnh cao</td>
+                        <td><span class="text-muted">Chỉ xem thử 5 phút</span></td>
+                        <td><strong class="text-gold"><i class="fa-solid fa-check text-green"></i> Không giới hạn</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Chất lượng hình ảnh</td>
+                        <td>HD 720p</td>
+                        <td><strong class="text-gold">Full HD 1080p / 4K</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Máy chủ tốc độ cao (Server 1 & 2)</td>
+                        <td>Tiêu chuẩn</td>
+                        <td><strong class="text-gold"><i class="fa-solid fa-bolt text-gold"></i> Băng thông ưu tiên</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Lưu lịch sử xem & Tiếp tục xem</td>
+                        <td><i class="fa-solid fa-check text-green"></i> Có</td>
+                        <td><i class="fa-solid fa-check text-green"></i> Có</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<!-- Nhúng Modal thanh toán VietQR dùng chung -->
+<%- include('../partials/paymentModal') %>
