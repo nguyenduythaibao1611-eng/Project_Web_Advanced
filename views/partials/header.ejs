@@ -17,30 +17,18 @@
                     <span>HOME</span>
                 </a>
 
-                <!-- 2. TV - Chưa có backend, gắn trạng thái Disabled & Tooltip -->
-                <a href="javascript:void(0)" class="nav-item nav-disabled" data-feature="TV Series" title="Tính năng TV Series đang phát triển">
-                    <span>TV</span>
-                    <span class="badge-soon">SOON</span>
-                </a>
-
-                <!-- 3. MOVIES - Đã có tính năng (phim lẻ) -->
+                <!-- 2. MOVIES - Đã có tính năng (danh sách phim) -->
                 <a href="/movies" class="nav-item movies-nav-item <%= (typeof title !== 'undefined' && title.includes('Danh sách Movies')) ? 'active' : '' %>">
                     <span>MOVIES</span>
                 </a>
 
-                <!-- 4. LIST (My List) - Đã có tính năng, chuyển đến trang Favorites -->
+                <!-- 3. LIST (My List) - Đã có tính năng, chuyển đến trang Favorites -->
                 <a href="/favorites" class="nav-item fav-nav-item <%= (typeof title !== 'undefined' && title.includes('Yêu Thích')) ? 'active' : '' %>">
                     <span>MY LIST</span>
                     <span class="fav-count-pill" id="favCountBadge" style="display: none;">0</span>
                 </a>
 
-                <!-- 5. KIDS - Chưa có backend, gắn trạng thái Disabled & Tooltip -->
-                <a href="javascript:void(0)" class="nav-item nav-disabled" data-feature="Kids" title="Tính năng Kids đang phát triển">
-                    <span>KIDS</span>
-                    <span class="badge-soon">SOON</span>
-                </a>
-
-                <!-- 6. Nút Tìm kiếm Search -->
+                <!-- 4. Nút Tìm kiếm Search -->
                 <div class="search-trigger-box">
                     <button type="button" class="icon-btn search-toggle-btn" id="searchToggleBtn" aria-label="Tìm kiếm" title="Tìm kiếm phim" aria-controls="searchExpandBar" aria-expanded="false">
                         <i class="fa-solid fa-magnifying-glass"></i>
@@ -97,21 +85,27 @@
                 </div>
             </div>
 
+            <!-- Nút Gói VIP -->
+            <a href="/pricing" class="nav-vip-cta" title="Bảng giá gói cước VIP">
+                <i class="fa-solid fa-crown"></i> <span>GÓI VIP</span>
+            </a>
+
             <!-- Avatar người dùng hoặc Đăng nhập / Đăng ký -->
             <% if (typeof user !== 'undefined' && user) { %>
                 <div class="user-profile-wrapper">
-                    <div class="avatar-ring" id="userAvatarBtn" title="<%= user.username %> (<%= user.email %>)">
+                    <div class="avatar-ring <%= user.isVip ? 'is-vip' : '' %>" id="userAvatarBtn" title="<%= user.username %> (<%= user.email %>)">
                         <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="<%= user.username %>" class="avatar-img">
                     </div>
                     <div class="user-dropdown" id="userDropdown">
                         <div class="user-dropdown-header">
-                            <span class="user-name"><%= user.username %></span>
+                            <span class="user-name"><%= user.username %> <% if (user.isVip) { %><span class="badge-vip-pill" style="font-size: 0.65rem; padding: 2px 6px;"><i class="fa-solid fa-crown"></i> VIP</span><% } %></span>
                             <span class="user-role"><%= user.email %></span>
                         </div>
                         <hr class="user-dropdown-divider">
                         <% if (user.role === 'admin') { %>
                             <a href="/admin" class="user-dropdown-link" style="color: #60a5fa;"><i class="fa-solid fa-gauge-high"></i> Trang Quản Trị</a>
                         <% } %>
+                        <a href="/pricing" class="user-dropdown-link" style="color: #fbbf24;"><i class="fa-solid fa-crown"></i> <%= user.isVip ? 'Gia hạn gói VIP' : 'Nâng cấp VIP' %></a>
                         <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
                         <a href="/onboarding" class="user-dropdown-link"><i class="fa-solid fa-sliders"></i> Sở thích phim</a>
                         <a href="/logout" class="user-dropdown-link" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>

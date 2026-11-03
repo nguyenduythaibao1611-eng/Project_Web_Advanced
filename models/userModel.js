@@ -41,6 +41,14 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false
         },
+        vipExpiresAt: {
+            type: Date,
+            default: null
+        },
+        vipPlan: {
+            type: String,
+            default: null
+        },
         activeSessionId: {
             type: String,
             default: null

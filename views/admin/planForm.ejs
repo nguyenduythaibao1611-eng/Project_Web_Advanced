@@ -1,0 +1,149 @@
+<div class="page-heading">
+    <div>
+        <span class="eyebrow"><%= editing ? 'CHỈNH SỬA GÓI' : 'TẠO GÓI MỚI' %></span>
+        <h1><%= editing ? `Chỉnh sửa: ${plan.name}` : 'Thêm gói VIP mới' %></h1>
+        <p>Thiết lập giá cước, thời hạn và quyền lợi hiển thị trên giao diện người dùng.</p>
+    </div>
+</div>
+
+<% if (error) { %>
+    <div class="notice" style="border-color: #ef4444; color: #fca5a5;"><%= error %></div>
+<% } %>
+
+<form class="editor-form" action="<%= editing ? `/admin/plans/${plan._id}` : '/admin/plans' %>" method="post">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+
+    <section class="panel form-panel">
+        <h2>Thông tin gói cước</h2>
+        <div class="form-grid">
+            <label>
+                Mã định danh (code) *
+                <input
+                    name="code"
+                    value="<%= plan.code %>"
+                    placeholder="VD: vip_1m, vip_weekend"
+                    required
+                    <%= editing ? 'readonly style="opacity: 0.7;"' : '' %>
+                >
+                <small class="muted">Chỉ dùng chữ thường, số và dấu gạch dưới.</small>
+            </label>
+
+            <label>
+                Tên gói cước *
+                <input
+                    name="name"
+                    value="<%= plan.name %>"
+                    placeholder="VD: VIP 1 Tháng, VIP Tiêu Chuẩn"
+                    required
+                >
+            </label>
+
+            <label>
+                Thời hạn sử dụng (Số ngày) *
+                <input
+                    type="number"
+                    name="durationDays"
+                    value="<%= plan.durationDays %>"
+                    min="1"
+                    placeholder="VD: 30"
+                    required
+                >
+            </label>
+
+            <label>
+                Giá bán ưu đãi (VND) *
+                <input
+                    type="number"
+                    name="price"
+                    value="<%= plan.price %>"
+                    min="0"
+                    step="1000"
+                    placeholder="VD: 49000"
+                    required
+                >
+            </label>
+
+            <label>
+                Giá gốc niêm yết (VND)
+                <input
+                    type="number"
+                    name="originalPrice"
+                    value="<%= plan.originalPrice || 0 %>"
+                    min="0"
+                    step="1000"
+                    placeholder="VD: 69000 (để hiện gạch ngang)"
+                >
+            </label>
+
+            <label>
+                Huy hiệu nổi bật (Badge)
+                <input
+                    name="badge"
+                    value="<%= plan.badge || '' %>"
+                    placeholder="VD: 👑 Phổ Biến Nhất, Tiết kiệm 37%"
+                >
+            </label>
+
+            <label>
+                Thứ tự hiển thị
+                <input
+                    type="number"
+                    name="order"
+                    value="<%= plan.order || 0 %>"
+                    placeholder="0, 1, 2..."
+                >
+                <small class="muted">Số nhỏ hơn sẽ hiển thị trước (từ trái qua phải).</small>
+            </label>
+
+            <label>
+                Mô tả ngắn
+                <input
+                    name="description"
+                    value="<%= plan.description || '' %>"
+                    placeholder="VD: Trọn bộ kho phim VIP không giới hạn"
+                >
+            </label>
+        </div>
+
+        <div style="margin-top: 16px;">
+            <label>
+                Các đặc quyền (Mỗi dòng một quyền lợi)
+                <textarea
+                    name="features"
+                    rows="4"
+                    placeholder="Xem phim không giới hạn 5 phút&#10;Mở khóa Server 1 & Server 2&#10;Chất lượng Full HD / 4K"
+                    style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.25); border: 1px solid var(--border); color: #fff; border-radius: 6px; padding: 10px;"
+                ><%= Array.isArray(plan.features) ? plan.features.join('\n') : (plan.features || '') %></textarea>
+            </label>
+        </div>
+
+        <div style="display: flex; gap: 24px; margin-top: 20px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" name="isPopular" value="true" <%= plan.isPopular ? 'checked' : '' %>>
+                <strong>Đánh dấu là gói Nổi bật nhất (Highlight viền vàng)</strong>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" name="isActive" value="true" <%= plan.isActive ? 'checked' : '' %>>
+                <strong>Kích hoạt mở bán cho người dùng ngay</strong>
+            </label>
+        </div>
+    </section>
+
+    <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+        <div style="display: flex; gap: 12px;">
+            <button type="submit" class="button primary">Lưu gói cước</button>
+            <a href="/admin/plans" class="button subtle">Hủy bỏ</a>
+        </div>
+        <% if (editing) { %>
+            <button
+                type="submit"
+                formaction="/admin/plans/<%= plan._id %>/delete"
+                class="button subtle"
+                style="color: #ef4444;"
+                onclick="return confirm('Bạn có chắc chắn muốn xóa gói cước này không?');"
+            >
+                Xóa gói cước
+            </button>
+        <% } %>
+    </div>
+</form>

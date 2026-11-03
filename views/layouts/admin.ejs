@@ -12,7 +12,7 @@
         <a class="brand" href="/admin">CINEVERSE<span>ADMIN WORKSPACE</span></a>
         <span class="nav-label">QUẢN TRỊ</span>
         <nav aria-label="Quản trị">
-            <% [['dashboard','/admin','Tổng quan'],['movies','/admin/movies','Quản lý phim'],['users','/admin/users','Người dùng'],['logs','/admin/logs','Nhật ký hoạt động']].forEach(([key,href,label]) => { %>
+            <% [['dashboard','/admin','Tổng quan'],['movies','/admin/movies','Quản lý phim'],['users','/admin/users','Người dùng'],['plans','/admin/plans','Gói cước VIP'],['orders','/admin/orders','Đơn hàng'],['logs','/admin/logs','Nhật ký hoạt động']].forEach(([key,href,label]) => { %>
                 <a href="<%= href %>" <%- section === key ? 'aria-current="page"' : '' %>><span class="nav-dot"></span><%= label %></a>
             <% }); %>
         </nav>

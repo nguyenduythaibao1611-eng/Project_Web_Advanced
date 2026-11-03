@@ -1,0 +1,73 @@
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">VIP TIERS & PRICING</span>
+        <h1>Quản lý Gói cước VIP</h1>
+        <p>Tùy chỉnh giá bán, thời hạn, quyền lợi và trạng thái hiển thị của các gói VIP trên toàn hệ thống.</p>
+    </div>
+    <a class="button primary" href="/admin/plans/new">＋ Thêm gói mới</a>
+</div>
+
+<section class="panel table-wrap">
+    <table>
+        <caption class="sr-only">Danh sách gói cước VIP</caption>
+        <thead>
+            <tr>
+                <th>Gói cước</th>
+                <th>Thời hạn</th>
+                <th>Giá ưu đãi</th>
+                <th>Giá gốc</th>
+                <th>Huy hiệu</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (plans && plans.length) { %>
+                <% plans.forEach(plan => { %>
+                    <tr>
+                        <td>
+                            <strong><%= plan.name %></strong>
+                            <small>Mã: <%= plan.code %></small>
+                        </td>
+                        <td>
+                            <strong><%= plan.durationDays %> ngày</strong>
+                            <small><%= (plan.durationDays / 30).toFixed(1) %> tháng</small>
+                        </td>
+                        <td>
+                            <strong style="color: #fbbf24; font-size: 1.05rem;"><%= Number(plan.price).toLocaleString('vi-VN') %> đ</strong>
+                        </td>
+                        <td>
+                            <span style="text-decoration: line-through; opacity: 0.65;"><%= plan.originalPrice ? Number(plan.originalPrice).toLocaleString('vi-VN') + ' đ' : '—' %></span>
+                        </td>
+                        <td>
+                            <% if (plan.badge) { %>
+                                <span class="badge <%= plan.isPopular ? 'gold' : '' %>"><%= plan.badge %></span>
+                            <% } else { %>
+                                <span style="opacity: 0.4;">—</span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <form action="/admin/plans/<%= plan._id %>/toggle" method="post" style="display: inline-block;">
+                                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                                <button type="submit" class="button subtle" style="font-size: 0.8rem; padding: 4px 10px; cursor: pointer;" title="Bấm để bật/tắt hiển thị gói">
+                                    <span class="badge <%= plan.isActive ? 'green' : '' %>">
+                                        <%= plan.isActive ? '● Đang mở bán' : '○ Tạm ẩn' %>
+                                    </span>
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <a class="button subtle" href="/admin/plans/<%= plan._id %>/edit">Chỉnh sửa →</a>
+                            </div>
+                        </td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr>
+                    <td colspan="7" class="empty">Chưa có gói cước nào. <a href="/admin/plans/new">Thêm gói VIP đầu tiên</a></td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</section>

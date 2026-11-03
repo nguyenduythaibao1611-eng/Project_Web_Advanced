@@ -12,6 +12,7 @@ router.use((req, res, next) => {
     res.locals.notice = req.query.saved === '1' ? 'Đã lưu thay đổi thành công.' : '';
     next();
 });
+
 router.get('/', controller.dashboard);
 router.get('/users', controller.users);
 router.post('/users/:id', controller.updateUser);
@@ -20,6 +21,19 @@ router.get('/movies/new', controller.movieForm);
 router.get('/movies/:id/edit', controller.movieForm);
 router.post('/movies', controller.saveMovie);
 router.post('/movies/:id', controller.saveMovie);
+
+// Quản lý Gói cước VIP
+router.get('/plans', controller.plans);
+router.get('/plans/new', controller.planForm);
+router.get('/plans/:id/edit', controller.planForm);
+router.post('/plans', controller.savePlan);
+router.post('/plans/:id', controller.savePlan);
+router.post('/plans/:id/toggle', controller.togglePlan);
+router.post('/plans/:id/delete', controller.deletePlan);
+
+// Quản lý Đơn hàng VietQR
+router.get('/orders', controller.orders);
+
 router.get('/logs', controller.logs);
 router.post('/upload', controller.upload);
 router.post('/logout', logout);

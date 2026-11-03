@@ -6,6 +6,7 @@ const tmdbService = require('../services/tmdbService');
 const ophimService = require('../services/ophimService');
 const WatchHistory = require('../models/watchHistoryModel');
 const User = require('../models/userModel');
+const Movie = require('../models/movieModel');
 
 let server;
 let base;
@@ -209,4 +210,72 @@ test('POST /api/auth/upgrade-vip successfully upgrades user account', async () =
     const data = await res.json();
     assert.equal(data.success, true);
     assert.equal(data.isVip, true);
+});
+
+test('VIP movie accessed by numeric TMDB ID correctly enforces VIP for regular users and bypasses for admin', async () => {
+    const origMovieFindOne = Movie.findOne;
+    const origUserFindById = User.findById;
+
+    try {
+        Movie.findOne = async () => ({
+            _id: '6adb92f1b5a481f6abd89875',
+            title: 'Thương Nguyên Đồ',
+            slug: 'thuong-nguyen-do',
+            origin_name: 'The Demon Hunter',
+            overview: 'VIP Anime',
+            isVip: true,
+            tmdb: { id: '229192' },
+            danh_sach_server: []
+        });
+
+        // 1. Regular user (member@cineverse.com)
+        User.findById = () => ({
+            select: async () => ({
+                _id: testUserId,
+                username: 'member',
+                email: 'member@cineverse.com',
+                role: 'user',
+                isVip: false,
+                activeSessionId: testSessionId
+            })
+        });
+
+        const regularRes = await fetch(`${base}/movies/229192`, {
+            headers: { Cookie: `cineverse_token=${testUserToken}` }
+        });
+        assert.equal(regularRes.status, 200);
+        const regularHtml = await regularRes.text();
+        assert.match(regularHtml, /"isMovieVip":true/);
+        assert.match(regularHtml, /"isVipUser":false/);
+        assert.match(regularHtml, /badge-vip-pill/);
+
+        // 2. Admin user (admin@cineverse.com)
+        const adminToken = jwt.sign(
+            { id: 'admin123', username: 'adminuser', sessionId: testSessionId },
+            process.env.JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        User.findById = () => ({
+            select: async () => ({
+                _id: 'admin123',
+                username: 'admin',
+                email: 'admin@cineverse.com',
+                role: 'admin',
+                isVip: true,
+                activeSessionId: testSessionId
+            })
+        });
+
+        const adminRes = await fetch(`${base}/movies/229192`, {
+            headers: { Cookie: `cineverse_token=${adminToken}` }
+        });
+        assert.equal(adminRes.status, 200);
+        const adminHtml = await adminRes.text();
+        assert.match(adminHtml, /"isMovieVip":true/);
+        assert.match(adminHtml, /"isVipUser":true/);
+    } finally {
+        Movie.findOne = origMovieFindOne;
+        User.findById = origUserFindById;
+    }
 });

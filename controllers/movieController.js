@@ -414,64 +414,83 @@ exports.getMovieDetail = async (req, res) => {
         let ophimEmbedLink = null;
         let ophimM3u8Link = null;
 
-        // Nếu movieId không phải thuần số (TMDB ID) thì kiểm tra MongoDB Atlas trước
+        // 1. Kiểm tra phim trong MongoDB Atlas trước (tìm theo tmdb.id, _id hoặc slug)
         const isNumericId = /^\d+$/.test(String(movieId));
-        if (!isNumericId) {
-            const query = { isDeleted: { $ne: true } };
-            if (mongoose.Types.ObjectId.isValid(movieId)) {
-                query.$or = [{ _id: movieId }, { slug: movieId }];
-            } else {
-                query.slug = movieId;
-            }
+        const query = { isDeleted: { $ne: true } };
+        if (isNumericId) {
+            query.$or = [{ 'tmdb.id': String(movieId) }, { slug: String(movieId) }];
+        } else if (mongoose.Types.ObjectId.isValid(movieId)) {
+            query.$or = [{ _id: movieId }, { slug: String(movieId) }, { 'tmdb.id': String(movieId) }];
+        } else {
+            query.slug = String(movieId);
+        }
+
+        const canQueryDb = mongoose.connection.readyState === 1 || Movie.findOne !== mongoose.Model.findOne;
+        if (canQueryDb) {
             try {
                 dbMovie = await Movie.findOne(query);
-                if (dbMovie) {
-                    const numericTmdbId = (dbMovie.tmdb && dbMovie.tmdb.id && !isNaN(Number(dbMovie.tmdb.id))) ? Number(dbMovie.tmdb.id) : null;
-                    movie = {
-                        id: numericTmdbId || dbMovie._id,
-                        title: dbMovie.title,
-                        original_title: dbMovie.origin_name || dbMovie.title,
-                        overview: dbMovie.overview,
-                        poster_path: dbMovie.poster_url,
-                        backdrop_path: dbMovie.backdrop_url,
-                        runtime: parseInt(dbMovie.time, 10) || 120,
-                        release_date: `${dbMovie.year || 2024}-01-01`,
-                        vote_average: dbMovie.rating || 0,
-                        genres: dbMovie.genres || [],
-                        isVip: dbMovie.isVip
-                    };
+            if (dbMovie) {
+                const numericTmdbId = (dbMovie.tmdb && dbMovie.tmdb.id && !isNaN(Number(dbMovie.tmdb.id))) ? Number(dbMovie.tmdb.id) : null;
+                movie = {
+                    id: numericTmdbId || dbMovie._id,
+                    title: dbMovie.title,
+                    original_title: dbMovie.origin_name || dbMovie.title,
+                    overview: dbMovie.overview,
+                    poster_path: dbMovie.poster_url,
+                    backdrop_path: dbMovie.backdrop_url,
+                    runtime: parseInt(dbMovie.time, 10) || 120,
+                    release_date: `${dbMovie.year || 2024}-01-01`,
+                    vote_average: dbMovie.rating || 0,
+                    genres: dbMovie.genres || [],
+                    isVip: Boolean(dbMovie.isVip)
+                };
 
-                    let s1M3u8 = null;
-                    let s1Embed = null;
-                    let s2Embed = null;
+                let s1M3u8 = null;
+                let s1Embed = null;
+                let s2Embed = null;
 
-                    if (Array.isArray(dbMovie.danh_sach_server)) {
-                        for (const s of dbMovie.danh_sach_server) {
-                            const isIframeServer = s.server_type === 'iframe' || /vidsrc|dự phòng|iframe/i.test(s.server_name || '');
-                            if (s.server_data && s.server_data.length > 0) {
-                                for (const ep of s.server_data) {
-                                    if (isIframeServer) {
-                                        if (ep.link_embed && !s2Embed) s2Embed = sanitizeHttpUrl(ep.link_embed);
-                                    } else {
-                                        if (ep.link_m3u8 && !s1M3u8) s1M3u8 = sanitizeHttpUrl(ep.link_m3u8);
-                                        if (ep.link_embed && !s1Embed) s1Embed = sanitizeHttpUrl(ep.link_embed);
-                                    }
+                if (Array.isArray(dbMovie.danh_sach_server)) {
+                    for (const s of dbMovie.danh_sach_server) {
+                        const isIframeServer = s.server_type === 'iframe' || /vidsrc|dự phòng|iframe/i.test(s.server_name || '');
+                        if (s.server_data && s.server_data.length > 0) {
+                            for (const ep of s.server_data) {
+                                if (isIframeServer) {
+                                    if (ep.link_embed && !s2Embed) s2Embed = sanitizeHttpUrl(ep.link_embed);
+                                } else {
+                                    if (ep.link_m3u8 && !s1M3u8) s1M3u8 = sanitizeHttpUrl(ep.link_m3u8);
+                                    if (ep.link_embed && !s1Embed) s1Embed = sanitizeHttpUrl(ep.link_embed);
                                 }
                             }
                         }
                     }
-                    ophimM3u8Link = s1M3u8;
-                    ophimEmbedLink = s1Embed;
-                    vidsrcLink = s2Embed || (dbMovie.tmdb && dbMovie.tmdb.id ? `https://vidsrc.xyz/embed/movie?tmdb=${dbMovie.tmdb.id}` : (ophimEmbedLink || `https://vidsrc.me/embed/movie?tmdb=${dbMovie._id}`));
                 }
+                ophimM3u8Link = s1M3u8;
+                ophimEmbedLink = s1Embed;
+                vidsrcLink = s2Embed || (dbMovie.tmdb && dbMovie.tmdb.id ? `https://vidsrc.xyz/embed/movie?tmdb=${dbMovie.tmdb.id}` : (ophimEmbedLink || `https://vidsrc.me/embed/movie?tmdb=${dbMovie._id}`));
+            }
             } catch (dbErr) {
                 console.error('Lỗi tìm phim MongoDB:', dbErr.message);
             }
         }
 
-        // Nếu chưa có (là ID TMDB hoặc không tìm thấy trong MongoDB), gọi tmdbService
+        // Nếu chưa có (là ID TMDB chưa lưu đầy đủ hoặc không tìm thấy trong MongoDB), gọi tmdbService
         if (!movie) {
             movie = await tmdbService.getMovieDetail(movieId);
+            if (movie && canQueryDb) {
+                // Kiểm tra xem phim này có gắn cờ VIP trong MongoDB Atlas không
+                try {
+                    const fallbackDb = await Movie.findOne({
+                        isDeleted: { $ne: true },
+                        $or: [{ 'tmdb.id': String(movie.id) }, { slug: String(movieId) }]
+                    });
+                    if (fallbackDb) {
+                        dbMovie = fallbackDb;
+                        movie.isVip = Boolean(fallbackDb.isVip);
+                    }
+                } catch (fallbackErr) {
+                    console.error('Lỗi kiểm tra fallbackDb:', fallbackErr.message);
+                }
+            }
         }
 
         if (!movie) {
@@ -601,7 +620,7 @@ exports.getMovieDetail = async (req, res) => {
         }
 
         ophimLink = ophimM3u8Link || ophimEmbedLink || null;
-        const isVip = Boolean(req.user && req.user.isVip);
+        const isVip = Boolean(req.user && (req.user.isVip || req.user.role === 'admin'));
 
         // Truyền đầy đủ các biến sang file view qua res.render()
         res.render('pages/movieDetail', {
