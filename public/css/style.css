@@ -410,6 +410,8 @@ button { font-family: inherit; }
 }
 .user-dropdown-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
 .user-dropdown-link.nav-disabled { opacity: 0.5; }
+.user-dropdown-vip-timer { font-variant-numeric: tabular-nums; font-weight: 700; letter-spacing: 0.03em; }
+
 
 /* ==========================================================================
    HERO SLIDER
@@ -922,7 +924,12 @@ button { font-family: inherit; }
 }
 .detail-overview { color: #c4cad8; font-size: 0.95rem; line-height: 1.75; }
 
-.player-section { margin: 44px var(--gutter) 0; scroll-margin-top: 90px; }
+.player-section {
+    max-width: 1440px;
+    margin: 44px auto 0;
+    padding: 0 var(--gutter);
+    scroll-margin-top: 90px;
+}
 .player-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
 .server-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
 .server-btn {
@@ -951,6 +958,9 @@ button { font-family: inherit; }
     position: relative;
     aspect-ratio: 16 / 9;
     max-height: 78vh;
+    width: 100%;
+    max-width: calc(78vh * 16 / 9);
+    margin: 0 auto;
     border-radius: var(--r-xl);
     overflow: hidden;
     background: #000;
@@ -1294,7 +1304,7 @@ button { font-family: inherit; }
     color: var(--text-3);
 }
 
-.server-hint { margin-top: 12px; font-size: 0.8rem; color: var(--text-3); display: flex; align-items: center; gap: 8px; }
+.server-hint { margin-top: 14px; font-size: 0.85rem; color: var(--text-3); display: flex; align-items: center; justify-content: center; text-align: center; gap: 8px; }
 
 /* ==========================================================================
    FAVORITES PAGE / SHARED PAGE LAYOUT

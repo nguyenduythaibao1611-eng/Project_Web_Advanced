@@ -62,24 +62,61 @@ exports.users = async (req, res) => {
     if (state === 'blocked') filter.isBlocked = true;
     if (state === 'active') filter.isBlocked = { $ne: true };
     if (state === 'vip') filter.isVip = true;
-    const [items, total] = await Promise.all([
-        User.find(filter).select('username email role isVip isBlocked createdAt __v').sort({ createdAt: -1, _id: -1 }).skip((query.page - 1) * 20).limit(20).lean(),
-        User.countDocuments(filter)
+    const [items, total, vipPlans] = await Promise.all([
+        User.find(filter).select('username email role isVip vipExpiresAt vipPlan isBlocked createdAt __v').sort({ createdAt: -1, _id: -1 }).skip((query.page - 1) * 20).limit(20).lean(),
+        User.countDocuments(filter),
+        VipPlan.find().sort({ order: 1, durationDays: 1 }).lean()
     ]);
-    render(res, 'users', { section: 'users', ...query, role, state, items, total, pages: Math.ceil(total / 20) });
+    render(res, 'users', { section: 'users', ...query, role, state, items, total, pages: Math.ceil(total / 20), vipPlans });
 };
 
 exports.updateUser = async (req, res) => {
     const target = id(req.params.id);
     const role = choice(req.body.role, ['user', 'admin']);
-    const isVip = choice(req.body.isVip, ['true', 'false']) === 'true';
     const isBlocked = choice(req.body.isBlocked, ['true', 'false']) === 'true';
     if (role === 'admin' && isBlocked) throw httpError('Hãy mở khóa trước khi cấp quyền admin.');
-    // Không sửa tài khoản admin qua web, tránh tự khóa và mất admin cuối khi có thao tác đồng thời.
-    const changes = { role, isVip, isBlocked, activeSessionId: null };
+
+    const changes = { role, isBlocked, activeSessionId: null };
+
+    // Cấp VIP linh hoạt theo gói từ bộ sưu tập VipPlan (không hardcode)
+    const vipPlanAction = typeof req.body.vipPlanAction === 'string' ? req.body.vipPlanAction.trim() : '';
+
+    if (vipPlanAction === 'remove') {
+        changes.isVip = false;
+        changes.vipExpiresAt = null;
+        changes.vipPlan = null;
+    } else if (vipPlanAction === 'lifetime') {
+        changes.isVip = true;
+        changes.vipExpiresAt = null;
+        changes.vipPlan = 'Vĩnh viễn';
+    } else if (vipPlanAction && vipPlanAction !== 'keep') {
+        const plan = await VipPlan.findOne({ code: vipPlanAction });
+        if (!plan) throw httpError('Gói cước VIP không tồn tại trong hệ thống.', 400);
+
+        const targetUser = await User.findById(target);
+        const now = new Date();
+        const baseDate = targetUser && targetUser.vipExpiresAt && targetUser.vipExpiresAt > now
+            ? new Date(targetUser.vipExpiresAt)
+            : now;
+        const newExpiresAt = new Date(baseDate.getTime() + plan.durationDays * 24 * 60 * 60 * 1000);
+
+        changes.isVip = true;
+        changes.vipExpiresAt = newExpiresAt;
+        changes.vipPlan = plan.name;
+    } else if (req.body.isVip !== undefined) {
+        // Tương thích ngược nếu client gửi isVip trực tiếp
+        const legacyIsVip = choice(req.body.isVip, ['true', 'false']) === 'true';
+        changes.isVip = legacyIsVip;
+        if (!legacyIsVip) {
+            changes.vipExpiresAt = null;
+            changes.vipPlan = null;
+        }
+    }
+
     const revision = text(req.body.revision, 12, true);
     if (!/^\d+$/.test(revision)) throw httpError('Phiên bản dữ liệu không hợp lệ.');
-    await audited(req, 'user.update', target, `Quyền: ${role}; VIP: ${isVip}; khóa: ${isBlocked}`, async () => {
+    const vipAuditText = changes.isVip ? (changes.vipPlan || 'Có') : 'Không';
+    await audited(req, 'user.update', target, `Quyền: ${role}; VIP: ${vipAuditText}; khóa: ${isBlocked}`, async () => {
         const result = await User.findOneAndUpdate({ _id: target, role: { $ne: 'admin' }, __v: Number(revision) },
             { $set: changes, $inc: { __v: 1 } }, { runValidators: true });
         if (!result) throw httpError('Tài khoản admin được bảo vệ hoặc dữ liệu vừa thay đổi. Hãy tải lại danh sách.', 409);

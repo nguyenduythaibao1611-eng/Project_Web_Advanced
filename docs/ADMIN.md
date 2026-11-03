@@ -11,13 +11,19 @@ Script cấp quyền chỉ cập nhật tài khoản hoạt động có email ch
 
 ## Chức năng
 
-- Dashboard lấy số tài khoản, admin, VIP, phim nội bộ, phim hiển thị và bản ghi yêu thích từ MongoDB. Không dùng lượt xem ngẫu nhiên của crawler làm số liệu người xem.
-- Tìm kiếm, lọc và phân trang người dùng/phim; 20 bản ghi mỗi trang.
-- Đổi VIP, khóa/mở khóa và cấp quyền admin cho tài khoản thành viên. Mọi cập nhật thu hồi phiên người đó. Không được sửa tài khoản đang có quyền admin qua web để bảo vệ admin cuối cùng, kể cả khi các yêu cầu chạy đồng thời. Việc hạ quyền admin cần quy trình vận hành trực tiếp có kiểm soát.
-- Thêm/sửa metadata, thể loại, quốc gia, diễn viên, đạo diễn, ảnh, trailer, tập và các server iframe/HLS. Tối đa 100 tập mỗi form. Các tập cùng tên và loại server được gom vào một server.
-- Lưu nháp, ẩn/hiện phim; chưa xóa vĩnh viễn dữ liệu. Form giữ dữ liệu khi lỗi validation và phát hiện chỉnh sửa đồng thời để tránh ghi đè.
-- Tải ảnh PNG/JPEG/WebP tối đa 5 MB hoặc dùng URL. Ảnh tải lên nằm trong `public/uploads/admin/`; thư mục được Git ignore. Phải giữ và sao lưu thư mục này cùng database, dùng volume bền vững nếu triển khai bằng container. Thay ảnh không tự xóa ảnh cũ.
-- Nhật ký lưu admin, thời gian, đối tượng, thao tác và trạng thái; không lưu mật khẩu hay token. Khi thay đổi dữ liệu thành công nhưng cập nhật kết quả log lỗi, trang báo lỗi; cần kiểm tra dữ liệu trước khi gửi lại. Log `pending` cần kiểm tra nếu tiến trình bị ngắt.
+- **Dashboard:** Lấy số tài khoản, admin, VIP, phim nội bộ, phim hiển thị và bản ghi yêu thích từ MongoDB. Không dùng lượt xem ngẫu nhiên của crawler làm số liệu người xem.
+- **Tìm kiếm, lọc và phân trang:** Hỗ trợ tìm theo tên/email, quyền, trạng thái với 20 bản ghi mỗi trang.
+- **Quản lý Thành viên & Cấp VIP Động Theo Gói:**
+  - Cột trạng thái hiển thị rõ ràng huy hiệu VIP, tên gói cước đang sử dụng và ngày hết hạn cụ thể (`vipExpiresAt`) hoặc nhãn "Vô thời hạn".
+  - Admin có thể cấp VIP cho thành viên bằng cách chọn trực tiếp các gói cước được cấu hình trong hệ thống (`VipPlan`), hoàn toàn không gán cứng mã gói trong code.
+  - Hệ thống tự động cộng dồn thời hạn sử dụng nếu người dùng vẫn đang trong thời hạn VIP; hỗ trợ lựa chọn Cấp VIP Vĩnh viễn (Vô thời hạn) và Hủy VIP (chuyển về tài khoản Thường).
+  - Khóa/mở khóa và cấp quyền admin cho tài khoản thành viên. Mọi cập nhật thu hồi phiên người đó ngay lập tức (`activeSessionId: null`). Không được sửa tài khoản đang có quyền admin qua web để bảo vệ admin cuối cùng.
+- **Quản lý Gói cước VIP (`/admin/plans`):** Thêm mới, chỉnh sửa, kích hoạt/tạm dừng và xóa gói cước VIP; cấu hình số ngày sử dụng (`durationDays`), giá niêm yết, giá gốc, huy hiệu (`badge`), mô tả và các đặc quyền VIP.
+- **Quản lý Đơn hàng Thanh toán (`/admin/orders`):** Theo dõi danh sách đơn hàng nạp VIP qua VietQR / SePay với đầy đủ thông tin: mã đơn hàng (`CV...`), số tiền, gói cước, mã giao dịch, trạng thái (`pending`, `completed`, `expired`).
+- **Quản lý Phim CRUD:** Thêm/sửa metadata, thể loại, quốc gia, diễn viên, đạo diễn, ảnh, trailer, tập và các server iframe/HLS. Tối đa 100 tập mỗi form. Các tập cùng tên và loại server được gom vào một server.
+- **Lưu nháp, ẩn/hiện phim:** Chưa xóa vĩnh viễn dữ liệu. Form giữ dữ liệu khi lỗi validation và phát hiện chỉnh sửa đồng thời qua versioning `__v` để tránh ghi đè.
+- **Tải ảnh an toàn:** Hỗ trợ PNG/JPEG/WebP tối đa 5 MB hoặc dùng URL. Ảnh tải lên nằm trong `public/uploads/admin/`; thư mục được Git ignore.
+- **Nhật ký Kiểm toán (`/admin/logs`):** Lưu admin thực hiện, thời gian, đối tượng, thao tác và trạng thái thành công/thất bại; không lưu mật khẩu hay token.
 
 ## Nội dung công khai
 
@@ -25,16 +31,14 @@ Script cấp quyền chỉ cập nhật tài khoản hoạt động có email ch
 
 Trang chủ và `/movies/:id` hiện dùng TMDB/OPhim, là nguồn riêng. Ẩn một bản ghi MongoDB chỉ ảnh hưởng thư viện MongoDB, không phải lệnh gỡ nội dung khỏi TMDB. Không tạo bộ yêu thích riêng cho thư viện vì `Favorite.movieId` hiện dùng ID TMDB số.
 
-Nguồn iframe chạy trong sandbox. HLS dùng hỗ trợ native của trình duyệt, có link mở nguồn cho trình phát hỗ trợ HLS; trên trình duyệt không hỗ trợ, dùng server iframe. Đánh dấu VIP là quản lý quyền thủ công, không bao gồm thanh toán hoặc chống sao chép video.
+Nguồn iframe chạy trong sandbox. HLS dùng hỗ trợ native của trình duyệt kết hợp HLS.js, có khung player chuẩn tỷ lệ rạp chiếu 16:9 căn giữa hoàn hảo.
 
 ## Bảo vệ
 
-Toàn bộ `/admin` kiểm tra phiên và quyền từ database trên mỗi request, trước controller. Các POST yêu cầu CSRF token gắn với phiên, bao gồm logout và upload. Trang admin không được cache và không được nhúng iframe. Chỉ whitelist các trường cho phép cập nhật; không nhận dữ liệu role/VIP từ đăng ký công khai.
+Toàn bộ `/admin` kiểm tra phiên và quyền từ database trên mỗi request, trước controller. Các POST yêu cầu CSRF token gắn với phiên, bao gồm logout và upload. Trang admin không được cache (`no-store`) và không được nhúng iframe. Chỉ whitelist các trường cho phép cập nhật; không nhận dữ liệu role/VIP từ đăng ký công khai.
 
 ## Kiểm thử và bản xem trước
 
-`npm test` dùng MongoDB local tại `127.0.0.1:27017`, tạo database ngẫu nhiên có prefix `cineverse_admin_test_` và xóa đúng database đó sau kiểm thử. Không đọc cấu hình DB thật từ `.env`.
+`npm test` dùng MongoDB local tại `127.0.0.1:27017`, tạo database ngẫu nhiên có prefix `cineverse_admin_test_` và xóa đúng database đó sau kiểm thử. Bộ kiểm thử đạt **46/46 tests PASS (100%)**, bao gồm cả kiểm thử cấp VIP động theo gói và thu hồi VIP.
 
-`npm run admin:preview` tạo database demo riêng có prefix `cineverse_admin_preview_`, chạy trên `127.0.0.1:5010`, không thay dữ liệu thật. Mở `http://127.0.0.1:5010/admin` để vào ngay, không cần tài khoản hoặc cấp quyền. Server preview tự dùng phiên của tài khoản admin giả; phiên này không được gửi xuống trình duyệt. Nút đăng xuất được thay bằng nhãn “Bản demo”. Dừng bằng Ctrl+C để xóa database demo. Không triển khai script preview ra môi trường công khai. Chế độ này chỉ có trong script preview, không bật bằng tham số URL hay biến môi trường của server thật.
-
-Crawler hàng loạt, đồng bộ lịch, thanh toán, biểu đồ lượt xem và quản lý AI chưa thuộc trang admin này. Script crawler CLI hiện tại vẫn dùng được độc lập; trang quản trị không giả lập trạng thái hoặc nút tác vụ chưa có xử lý.
+`npm run admin:preview` tạo database demo riêng có prefix `cineverse_admin_preview_`, chạy trên `127.0.0.1:5010`, không thay dữ liệu thật. Mở `http://127.0.0.1:5010/admin` để vào ngay, không cần tài khoản hoặc cấp quyền.

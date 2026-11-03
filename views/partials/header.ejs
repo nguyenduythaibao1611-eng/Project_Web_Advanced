@@ -105,7 +105,29 @@
                         <% if (user.role === 'admin') { %>
                             <a href="/admin" class="user-dropdown-link" style="color: #60a5fa;"><i class="fa-solid fa-gauge-high"></i> Trang Quản Trị</a>
                         <% } %>
-                        <a href="/pricing" class="user-dropdown-link" style="color: #fbbf24;"><i class="fa-solid fa-crown"></i> <%= user.isVip ? 'Gia hạn gói VIP' : 'Nâng cấp VIP' %></a>
+                        <% if (user.isVip) { %>
+                        <%
+                            let countdownStr = 'VIP Vô thời hạn';
+                            let expiresIso = '';
+                            if (user.vipExpiresAt) {
+                                expiresIso = new Date(user.vipExpiresAt).toISOString();
+                                const diffMs = new Date(user.vipExpiresAt).getTime() - Date.now();
+                                if (diffMs > 0) {
+                                    const d = Math.floor(diffMs / (24 * 3600 * 1000));
+                                    const h = Math.floor((diffMs % (24 * 3600 * 1000)) / (3600 * 1000));
+                                    const m = Math.floor((diffMs % (3600 * 1000)) / (60 * 1000));
+                                    countdownStr = String(d).padStart(2, '0') + ':' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                                } else {
+                                    countdownStr = '00:00:00';
+                                }
+                            }
+                        %>
+                        <a href="/pricing" class="user-dropdown-link user-dropdown-vip-timer" id="userVipLink" style="color: #fbbf24;" title="Thời hạn VIP còn lại (Bấm để gia hạn)">
+                            <i class="fa-solid fa-crown"></i> <span id="userVipCountdown" data-expires="<%= expiresIso %>"><%= countdownStr %></span>
+                        </a>
+                    <% } else { %>
+                        <a href="/pricing" class="user-dropdown-link" style="color: #fbbf24;"><i class="fa-solid fa-crown"></i> Nâng cấp VIP</a>
+                    <% } %>
                         <a href="/favorites" class="user-dropdown-link"><i class="fa-solid fa-heart"></i> Phim đã lưu</a>
                         <a href="/onboarding" class="user-dropdown-link"><i class="fa-solid fa-sliders"></i> Sở thích phim</a>
                         <a href="/logout" class="user-dropdown-link" style="color: #ef4444;"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
