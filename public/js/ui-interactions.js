@@ -223,4 +223,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
+
+    // ---------- Đồng hồ đếm ngược VIP Dropdown ----------
+    const vipCountdownEl = document.getElementById('userVipCountdown');
+    if (vipCountdownEl && vipCountdownEl.dataset.expires) {
+        const expireTime = new Date(vipCountdownEl.dataset.expires).getTime();
+        function updateVipTimer() {
+            const diffMs = expireTime - Date.now();
+            if (diffMs <= 0) {
+                vipCountdownEl.textContent = '00:00:00';
+                return;
+            }
+            const d = Math.floor(diffMs / (24 * 3600 * 1000));
+            const h = Math.floor((diffMs % (24 * 3600 * 1000)) / (3600 * 1000));
+            const m = Math.floor((diffMs % (3600 * 1000)) / (60 * 1000));
+            vipCountdownEl.textContent = String(d).padStart(2, '0') + ':' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+        updateVipTimer();
+        setInterval(updateVipTimer, 1000);
+    }
+
 });

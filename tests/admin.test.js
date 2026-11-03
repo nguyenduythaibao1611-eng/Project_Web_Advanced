@@ -9,6 +9,7 @@ process.env.JWT_SECRET = 'isolated-admin-test-secret-never-use-in-production';
 const User = require('../models/userModel');
 const Movie = require('../models/movieModel');
 const Log = require('../models/adminLogModel');
+const VipPlan = require('../models/vipPlanModel');
 const app = require('../app');
 const database = `cineverse_admin_test_${crypto.randomBytes(8).toString('hex')}`;
 let server;
@@ -172,4 +173,57 @@ test('database role is rechecked on every request, logout invalidates session', 
     assert.equal((await get('/admin', auth)).status, 403);
     assert.equal((await post('/admin/logout', { _csrf: token(admin) })).status, 302);
     assert.equal((await get('/admin', adminCookie)).status, 302);
+});
+
+test('admin can grant VIP dynamically according to managed vipPlan', async () => {
+    const loginRes = await post('/login', { usernameOrEmail: 'testadmin', password: 'Admin-test-2026!', redirect: '/admin' }, '');
+    adminCookie = loginRes.headers.get('set-cookie').split(';')[0];
+    admin = await User.findById(admin._id);
+
+    let customPlan = await VipPlan.findOne({ code: 'test_plan_admin_60d' });
+    if (!customPlan) {
+        customPlan = await VipPlan.create({
+            code: 'test_plan_admin_60d',
+            name: 'Gói Thử Nghiệm 60 Ngày',
+            durationDays: 60,
+            price: 99000,
+            isActive: true
+        });
+    }
+
+    const currentMember = await User.findById(member._id);
+    const bodyGrant = {
+        _csrf: token(admin),
+        revision: String(currentMember.__v || 0),
+        role: 'user',
+        isBlocked: 'false',
+        vipPlanAction: customPlan.code
+    };
+
+    const resGrant = await post('/admin/users/' + member._id, bodyGrant);
+    assert.equal(resGrant.status, 302);
+
+    let updatedMember = await User.findById(member._id);
+    assert.equal(updatedMember.isVip, true);
+    assert.equal(updatedMember.vipPlan, customPlan.name);
+    assert.ok(updatedMember.vipExpiresAt instanceof Date);
+
+    const diffDays = Math.round((updatedMember.vipExpiresAt.getTime() - Date.now()) / (24 * 3600 * 1000));
+    assert.ok(diffDays >= 59 && diffDays <= 61, 'Thời gian VIP phải tương ứng với durationDays của gói');
+
+    // Admin hủy VIP
+    const bodyRemove = {
+        _csrf: token(admin),
+        revision: String(updatedMember.__v),
+        role: 'user',
+        isBlocked: 'false',
+        vipPlanAction: 'remove'
+    };
+    const resRemove = await post('/admin/users/' + member._id, bodyRemove);
+    assert.equal(resRemove.status, 302);
+
+    updatedMember = await User.findById(member._id);
+    assert.equal(updatedMember.isVip, false);
+    assert.equal(updatedMember.vipExpiresAt, null);
+    assert.equal(updatedMember.vipPlan, null);
 });

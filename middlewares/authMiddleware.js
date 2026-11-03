@@ -69,6 +69,11 @@ const checkUser = async (req, res, next) => {
             return next();
         }
 
+        if (user.isVip && user.vipExpiresAt && new Date() > user.vipExpiresAt) {
+            user.isVip = false;
+            await User.findByIdAndUpdate(user._id, { isVip: false });
+        }
+
         req.sessionId = tokenSessionId;
         req.user = user;
         res.locals.user = user;

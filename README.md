@@ -256,6 +256,26 @@ cineverse/
 
 ---
 
+### 4.10. Cổng Thanh Toán VietQR Tự Động & Bảng Giá VIP (Payment Gateway)
+- **Chuẩn Quốc Gia VietQR & Tự Động Hóa SePay:**
+  - Khởi tạo mã đơn hàng dạng `CV...` ngẫu nhiên, sinh mã ảnh QR động tự điền số tài khoản, số tiền và nội dung chuyển khoản.
+  - Tích hợp Webhook SePay (`POST /api/payment/sepay-webhook`) xác thực API Key, kiểm tra đối soát số tiền chuyển và tự động kích hoạt/cộng dồn thời hạn VIP cho người dùng.
+  - Cơ chế **Polling 2 giây/lần** phía Client tự động nhận diện giao dịch thành công mà không bắt buộc người dùng tải lại trang.
+- **Môi trường Giả lập Thanh toán 1-Click (Sandbox Simulator):**
+  - Tích hợp nút giả lập thanh toán nhanh dành cho Demo và chấm điểm đồ án (`POST /api/payment/simulate-success`), hỗ trợ kích hoạt tức thì.
+
+### 4.11. Đồng Hồ Đếm Ngược VIP Dropdown & Admin Cấp VIP Động Theo Gói
+- **Đồng Hồ Đếm Ngược Thời Gian Thực (`👑 DD:HH:MM`):**
+  - Thay thế dòng chữ gia hạn tĩnh bằng bộ đếm chuẩn: `👑 29:23:59` (Ngày:Giờ:Phút).
+  - Tích hợp bộ đếm JavaScript lùi từng giây trong `ui-interactions.js`, bấm vào dẫn thẳng đến trang `/pricing` để gia hạn.
+  - Tự động kiểm tra thời hạn `vipExpiresAt` trong `authMiddleware.js` để thu hồi quyền VIP khi hết hạn.
+- **Admin Cấp VIP Động Theo Gói Cước Không Hardcode:**
+  - Trong trang Quản lý Người dùng (`/admin/users`), danh sách gói VIP được truy vấn trực tiếp từ bộ sưu tập `VipPlan`.
+  - Hỗ trợ cấp theo bất kỳ gói cước nào có trong hệ thống, tự động cộng dồn vào thời hạn còn lại nếu tài khoản đang có VIP.
+  - Hỗ trợ lựa chọn cấp VIP Vĩnh viễn (Vô thời hạn) và Hủy gói VIP về tài khoản thường.
+- **Tối Ưu Trình Phát Chuẩn Rạp Chiếu 16:9 Căn Giữa Hoàn Hảo:**
+  - Tối ưu `.player-wrapper` với `max-width: calc(78vh * 16 / 9)` và `margin: 0 auto`, loại bỏ hoàn toàn hiện tượng lệch trái trên màn hình rộng, đồng bộ cân đối giữa khung chiếu, tiêu đề và danh sách tập phim.
+
 ## 5. CẨM NANG BẮT BỆNH & KHẮC PHỤC SỰ CỐ (TROUBLESHOOTING MATRIX)
 
 | Triệu chứng nhìn thấy (Symptom) | Nguyên nhân cốt lõi (Root Cause) | File liên quan | Cách xử lý dứt điểm |
@@ -314,13 +334,13 @@ cineverse/
 ```bash
 npm test
 ```
-* **Quy mô kiểm thử:** **34 bài test tự động** bao phủ 100% các phân hệ:
+* **Quy mô kiểm thử:** **46 bài test tự động** bao phủ 100% các phân hệ:
   * `tests/admin.test.js`: 10 bài test bảo mật Admin thuần MongoDB, CSRF, upload file, versioning `__v`, session revocation.
   * `tests/onboarding.test.js`: 10 bài test quy trình khảo sát sở thích 3-5 thể loại, độ tuổi, cập nhật profile.
   * `tests/watchHistoryAndVip.test.js`: 4 bài test render HLS player, lưu tọa độ giây, API nâng cấp VIP.
   * `tests/movies.test.js`: 4 bài test trang danh mục phim, phân trang, lọc theo thể loại.
   * `tests/search.test.js`: 6 bài test tìm kiếm realtime, live suggestions dropdown, escape ký tự.
-* **Kết quả:** Luôn đạt **34 / 34 tests PASS (100%)**.
+* **Kết quả:** Luôn đạt **46 / 46 tests PASS (100%)**.
 
 ### 2. Kiểm tra cú pháp (Linting):
 ```bash
@@ -341,6 +361,7 @@ npm run lint
 | **Phase 5** | Danh sách chọn tập phim bộ phân trang 50 tập/tab | **Ban & Bảo** | 🟢 **DONE** | PR #19: Phân tab 50 tập, chuyển tập zero-reload |
 | **Phase 6** | Bảng điều khiển Admin Dashboard thuần MongoDB & Audit Logs | **Nam & Bảo** | 🟢 **DONE** | PR #17: Dashboard, quản lý user, CRUD phim, logs |
 | **Phase 7** | Testing tự động (34 tests), Báo cáo tiến độ đồ án | **Bảo** | 🟢 **DONE** | 34/34 tests pass, tài liệu kỹ thuật & slide |
+| **Phase 8** | Cổng thanh toán VietQR, Đồng hồ VIP Dropdown, Cấp VIP động & Căn giữa Player | **Bảo** | 🟢 **DONE** | 46/46 tests pass, VietQR SePay, VIP Timer DD:HH:MM, Admin cấp gói động |
 
 ---
 
