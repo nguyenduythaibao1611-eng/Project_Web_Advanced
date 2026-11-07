@@ -2822,3 +2822,112 @@ button { font-family: inherit; }
         font-size: 2rem;
     }
 }
+
+
+/* Nút Kiểm tra thanh toán & Cảnh báo chưa nhận được thanh toán */
+.btn-check-payment {
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(245, 158, 11, 0.35));
+    color: #fbbf24;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.25s ease;
+}
+
+.btn-check-payment:hover:not(:disabled) {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #07080f;
+    box-shadow: 0 8px 24px rgba(251, 191, 36, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-check-payment:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.payment-pending-alert {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 12px;
+    padding: 14px 16px;
+    animation: fadeIn 0.3s ease;
+}
+
+.pending-alert-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    color: #fbbf24;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.pending-alert-content i {
+    font-size: 1.25rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.pending-alert-content strong {
+    display: block;
+    font-size: 0.92rem;
+    margin-bottom: 3px;
+    color: #fef3c7;
+}
+
+.pending-alert-content p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+}
+
+.pending-alert-actions {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-back-pay {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: #fff;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-back-pay:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.redirect-countdown {
+    margin-top: 16px;
+    font-size: 0.92rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.redirect-countdown strong {
+    color: #fbbf24;
+    font-size: 1.15rem;
+}

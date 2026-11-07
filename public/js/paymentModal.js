@@ -5,6 +5,8 @@
 let currentOrderCode = null;
 let paymentPollingTimer = null;
 let paymentCountdownTimer = null;
+let successRedirectTimer = null;
+let pendingCountdownTimer = null;
 
 /**
  * Mở Modal thanh toán VietQR
@@ -31,6 +33,12 @@ window.openPaymentModal = async function (planCode) {
 /**
  * Đóng Modal thanh toán
  */
+window.dismissPendingAlert = function () {
+    clearInterval(pendingCountdownTimer);
+    const alertBox = document.getElementById('paymentPendingAlert');
+    if (alertBox) alertBox.style.display = 'none';
+};
+
 window.closePaymentModal = function (isCompleted) {
     const overlay = document.getElementById('paymentModalOverlay');
     if (overlay) {
@@ -40,6 +48,8 @@ window.closePaymentModal = function (isCompleted) {
 
     clearInterval(paymentPollingTimer);
     clearInterval(paymentCountdownTimer);
+    clearInterval(successRedirectTimer);
+    window.dismissPendingAlert();
 
     if (isCompleted) {
         // Bắn sự kiện thông báo toàn trang rằng VIP đã được kích hoạt
@@ -107,6 +117,12 @@ async function loadPlansSelection() {
  */
 async function initiateOrder(planCode) {
     showStep('paymentStepQR');
+    window.dismissPendingAlert();
+    const btnCheck = document.getElementById('btnCheckPayment');
+    if (btnCheck) {
+        btnCheck.disabled = false;
+        btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Kiểm tra thanh toán';
+    }
 
     const spinner = document.getElementById('qrLoadingSpinner');
     const qrImg = document.getElementById('qrCodeImg');
@@ -216,11 +232,34 @@ function startPolling(orderCode) {
     }, 2000);
 }
 
+function showPendingAlert() {
+    const alertBox = document.getElementById('paymentPendingAlert');
+    const timerText = document.getElementById('pendingTimerText');
+    if (!alertBox) return;
+
+    alertBox.style.display = 'block';
+    let timeLeft = 5;
+    if (timerText) timerText.textContent = `${timeLeft}s`;
+
+    clearInterval(pendingCountdownTimer);
+    pendingCountdownTimer = setInterval(() => {
+        timeLeft -= 1;
+        if (timerText) timerText.textContent = `${timeLeft}s`;
+        if (timeLeft <= 0) {
+            window.dismissPendingAlert();
+        }
+    }, 1000);
+}
+
 /**
  * Xử lý khi thanh toán thành công
  */
 function onPaymentSuccess() {
     showStep('paymentStepSuccess');
+
+    clearInterval(paymentPollingTimer);
+    clearInterval(paymentCountdownTimer);
+    window.dismissPendingAlert();
 
     // Thêm huy hiệu VIP vào thanh Header ngay lập tức
     const avatarRing = document.getElementById('userAvatarBtn');
@@ -232,10 +271,28 @@ function onPaymentSuccess() {
         avatarRing.parentNode.insertBefore(crown, avatarRing);
     }
 
+    // Bắn sự kiện thông báo VIP đã kích hoạt
+    window.dispatchEvent(new CustomEvent('vipUpgraded', { detail: { isVip: true } }));
+
     // Bắn thông báo Toast
     if (typeof window.showToast === 'function') {
         window.showToast('Chúc mừng! Gói VIP của bạn đã được kích hoạt thành công.', 'success');
     }
+
+    // Tự động đếm lùi 5 giây rồi về trang chính
+    let redirectSeconds = 5;
+    const timerEl = document.getElementById('successRedirectTimer');
+    if (timerEl) timerEl.textContent = redirectSeconds;
+
+    clearInterval(successRedirectTimer);
+    successRedirectTimer = setInterval(() => {
+        redirectSeconds -= 1;
+        if (timerEl) timerEl.textContent = redirectSeconds;
+        if (redirectSeconds <= 0) {
+            clearInterval(successRedirectTimer);
+            window.location.href = '/';
+        }
+    }, 1000);
 }
 
 /**
@@ -248,36 +305,33 @@ function showStep(stepId) {
     });
 }
 
-// Xử lý nút Giả lập thanh toán Sandbox (1-Click cho Demo/Chấm điểm)
+// Xử lý nút Kiểm tra thanh toán
 document.addEventListener('DOMContentLoaded', function () {
-    const btnSimulate = document.getElementById('btnSimulatePayment');
-    if (btnSimulate) {
-        btnSimulate.addEventListener('click', async function () {
+    const btnCheck = document.getElementById('btnCheckPayment');
+    if (btnCheck) {
+        btnCheck.addEventListener('click', async function () {
             if (!currentOrderCode) return;
 
-            btnSimulate.disabled = true;
-            btnSimulate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang giả lập thanh toán...';
+            btnCheck.disabled = true;
+            btnCheck.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...';
 
             try {
-                const res = await fetch('/api/payment/simulate-success', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderCode: currentOrderCode })
-                });
+                const res = await fetch(`/api/payment/check-status/${currentOrderCode}`);
                 const data = await res.json();
-                if (data.success) {
-                    clearInterval(paymentPollingTimer);
-                    clearInterval(paymentCountdownTimer);
+
+                if (data.success && data.isCompleted) {
                     onPaymentSuccess();
                 } else {
-                    alert(data.message || 'Không thể giả lập thanh toán.');
-                    btnSimulate.disabled = false;
-                    btnSimulate.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ [Demo] Giả lập thanh toán thành công (Sandbox)';
+                    // Chưa nhận được thanh toán
+                    showPendingAlert();
+                    btnCheck.disabled = false;
+                    btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Kiểm tra thanh toán';
                 }
             } catch (err) {
-                console.error('Lỗi giả lập thanh toán:', err);
-                btnSimulate.disabled = false;
-                btnSimulate.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ [Demo] Giả lập thanh toán thành công (Sandbox)';
+                console.error('Lỗi khi kiểm tra thanh toán:', err);
+                showPendingAlert();
+                btnCheck.disabled = false;
+                btnCheck.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Kiểm tra thanh toán';
             }
         });
     }
