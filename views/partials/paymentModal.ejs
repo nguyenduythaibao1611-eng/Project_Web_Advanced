@@ -71,9 +71,25 @@
                 </div>
             </div>
 
+            <!-- Thông báo khi kiểm tra mà chưa thanh toán -->
+            <div id="paymentPendingAlert" class="payment-pending-alert" style="display: none;">
+                <div class="pending-alert-content">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>
+                        <strong>Chưa nhận được thanh toán</strong>
+                        <p>Hệ thống chưa ghi nhận biến động số dư cho mã đơn này. Bạn hãy kiểm tra đã chuyển đúng số tiền và nội dung chuyển khoản nhé.</p>
+                    </div>
+                </div>
+                <div class="pending-alert-actions">
+                    <button type="button" class="btn-back-pay" onclick="dismissPendingAlert()">
+                        <i class="fa-solid fa-arrow-left"></i> Trở lại để thanh toán (<span id="pendingTimerText">5s</span>)
+                    </button>
+                </div>
+            </div>
+
             <div class="payment-modal-footer">
-                <button type="button" id="btnSimulatePayment" class="btn-sandbox-simulate">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ [Demo] Giả lập thanh toán thành công (Sandbox)
+                <button type="button" id="btnCheckPayment" class="btn-check-payment">
+                    <i class="fa-solid fa-arrows-rotate"></i> Kiểm tra thanh toán
                 </button>
             </div>
         </div>
@@ -86,10 +102,13 @@
                 </div>
                 <h2>NÂNG CẤP VIP THÀNH CÔNG!</h2>
                 <p>Chúc mừng bạn đã trở thành thành viên <strong>CineVerse VIP</strong>. Mọi đặc quyền cao cấp đã được kích hoạt tự động.</p>
+                <div class="redirect-countdown">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Tự động chuyển về trang chính sau <strong id="successRedirectTimer">5</strong> giây...
+                </div>
                 <div class="success-actions">
-                    <button type="button" class="btn-success-continue" onclick="closePaymentModal(true)">
-                        <i class="fa-solid fa-play"></i> Bắt đầu thưởng thức phim ngay
-                    </button>
+                    <a href="/" class="btn-success-continue">
+                        <i class="fa-solid fa-house"></i> Về trang chính ngay
+                    </a>
                 </div>
             </div>
         </div>
