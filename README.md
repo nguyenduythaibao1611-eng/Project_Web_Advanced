@@ -261,8 +261,10 @@ cineverse/
   - Khởi tạo mã đơn hàng dạng `CV...` ngẫu nhiên, sinh mã ảnh QR động tự điền số tài khoản, số tiền và nội dung chuyển khoản.
   - Tích hợp Webhook SePay (`POST /api/payment/sepay-webhook`) xác thực API Key, kiểm tra đối soát số tiền chuyển và tự động kích hoạt/cộng dồn thời hạn VIP cho người dùng.
   - Cơ chế **Polling 2 giây/lần** phía Client tự động nhận diện giao dịch thành công mà không bắt buộc người dùng tải lại trang.
-- **Môi trường Giả lập Thanh toán 1-Click (Sandbox Simulator):**
-  - Tích hợp nút giả lập thanh toán nhanh dành cho Demo và chấm điểm đồ án (`POST /api/payment/simulate-success`), hỗ trợ kích hoạt tức thì.
+- **Nút "Kiểm tra thanh toán" & Trải nghiệm Đếm ngược 5 giây:**
+  - Nút "Kiểm tra thanh toán" cho phép người dùng chủ động kiểm tra trạng thái ngay sau khi quét mã ngân hàng.
+  - Khi thanh toán thành công: Hiển thị thông báo thành công có đếm ngược 5 giây và tự động chuyển về trang chủ (`/`).
+  - Khi chưa thanh toán: Hiển thị cảnh báo trạng thái chưa thanh toán kèm nút "Trở lại để thanh toán", tự động ẩn sau 5 giây.
 
 ### 4.11. Đồng Hồ Đếm Ngược VIP Dropdown & Admin Cấp VIP Động Theo Gói
 - **Đồng Hồ Đếm Ngược Thời Gian Thực (`👑 DD:HH:MM`):**
